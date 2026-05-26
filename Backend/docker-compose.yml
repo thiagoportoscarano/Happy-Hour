@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  cassandra:
+    image: cassandra:5.0          # mesma versão citada no documento
+    container_name: happyhour-cassandra
+    ports:
+      - "9042:9042"               # porta CQL nativa
+    environment:
+      - CASSANDRA_CLUSTER_NAME=HappyHourCluster
+      - CASSANDRA_DC=datacenter1
+      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
+      - HEAP_NEWSIZE=128M
+      - MAX_HEAP_SIZE=512M        # ajuste conforme a RAM da máquina
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s           # Cassandra demora ~45s para iniciar
+
+volumes:
+  cassandra_data:
+    driver: local

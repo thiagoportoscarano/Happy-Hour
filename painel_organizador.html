@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Happy Hour — Painel do Organizador</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="global.css">
+<style>
+  nav { background: rgba(10,14,26,0.96); border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .nav-logo span { color: rgba(255,255,255,0.85); }
+  .nav-links a { color: rgba(255,255,255,0.5); }
+  .nav-links a:hover { color: var(--brand); }
+
+  .org-badge { display: inline-flex; align-items: center; gap: 0.375rem; background: rgba(255,186,80,0.12); border: 1px solid rgba(255,186,80,0.25); color: #FFBA50; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.25rem 0.625rem; border-radius: 99px; }
+  .colab-badge { display: inline-flex; align-items: center; gap: 0.375rem; background: rgba(121,145,252,0.12); border: 1px solid rgba(121,145,252,0.3); color: #7991fc; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.25rem 0.625rem; border-radius: 99px; }
+
+  .dash-layout { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - 64px); }
+
+  .sidebar { background: var(--ink); padding: 2rem 1.5rem; border-right: 1px solid rgba(255,255,255,0.06); }
+  .sidebar-org { margin-bottom: 2rem; }
+  .sidebar-org .org-name { font-family: var(--font-display); font-size: 0.9375rem; font-weight: 700; color: var(--white); margin-bottom: 0.125rem; }
+  .sidebar-org .org-type { font-size: 0.72rem; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.06em; }
+  .sidebar-nav { list-style: none; display: flex; flex-direction: column; gap: 0.25rem; }
+  .sidebar-nav li a, .sidebar-nav li button {
+    display: flex; align-items: center; gap: 0.625rem; width: 100%;
+    font-family: var(--font-body); font-size: 0.875rem; font-weight: 500;
+    color: rgba(255,255,255,0.45); text-decoration: none; background: none; border: none;
+    padding: 0.625rem 0.875rem; border-radius: var(--r-sm); cursor: pointer;
+    transition: background 0.2s, color 0.2s; text-align: left;
+  }
+  .sidebar-nav li a:hover, .sidebar-nav li button:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.85); }
+  .sidebar-nav li a.active { background: rgba(121,145,252,0.15); color: var(--brand); }
+  .sidebar-sep { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 1rem 0; }
+
+  .dash-main { padding: 2.5rem; background: var(--paper); overflow-y: auto; }
+
+  .dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; animation: fadeUp 0.5s ease both; }
+  .dash-header h1 { font-family: var(--font-display); font-size: 1.625rem; font-weight: 800; letter-spacing: -0.03em; color: var(--ink); }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2.5rem; animation: fadeUp 0.5s 0.05s ease both; }
+  .kpi-card { background: var(--white); border-radius: var(--r-lg); border: 1px solid var(--paper-3); padding: 1.25rem 1.5rem; }
+  .kpi-card .kpi-val { font-family: var(--font-display); font-size: 1.75rem; font-weight: 800; color: var(--ink); letter-spacing: -0.03em; line-height: 1; }
+  .kpi-card .kpi-val.highlight { color: var(--brand); }
+  .kpi-card .kpi-val.success  { color: var(--success); }
+  .kpi-card .kpi-label { font-size: 0.8125rem; color: var(--ink-3); margin-top: 0.25rem; }
+
+  .events-table-wrap { background: var(--white); border-radius: var(--r-xl); border: 1px solid var(--paper-3); overflow: hidden; animation: fadeUp 0.5s 0.1s ease both; }
+  .table-header { padding: 1.25rem 1.75rem; border-bottom: 1px solid var(--paper-2); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; }
+  .table-header h2 { font-family: var(--font-display); font-size: 1.0625rem; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); }
+
+  .events-table { width: 100%; border-collapse: collapse; }
+  .events-table th { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); padding: 0.875rem 1.75rem; text-align: left; border-bottom: 1px solid var(--paper-2); background: var(--paper); }
+  .events-table td { padding: 1rem 1.75rem; font-size: 0.875rem; color: var(--ink-2); border-bottom: 1px solid var(--paper-2); vertical-align: middle; }
+  .events-table tr:last-child td { border-bottom: none; }
+  .events-table tr:hover td { background: var(--paper); }
+  .td-title { font-weight: 600; color: var(--ink); font-family: var(--font-display); font-size: 0.9375rem; }
+  .td-badge { display: inline-flex; align-items: center; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; padding: 0.25rem 0.625rem; border-radius: 99px; }
+  .badge-ativo     { background: var(--success-bg); color: #0d5c44; }
+  .badge-encerrado { background: var(--paper-2); color: var(--ink-3); }
+  .badge-rascunho  { background: rgba(239,159,39,0.12); color: #92670A; }
+
+  .progress-bar { height: 5px; background: var(--paper-3); border-radius: 99px; width: 80px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--brand); border-radius: 99px; }
+
+  .td-actions { display: flex; align-items: center; gap: 0.375rem; }
+  .btn-icon { width: 32px; height: 32px; border-radius: var(--r-sm); border: 1.5px solid var(--paper-3); background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; transition: border-color 0.2s, background 0.2s; }
+  .btn-icon:hover { border-color: var(--brand); background: var(--brand-light); }
+  .btn-icon.danger:hover { border-color: var(--danger); background: var(--danger-bg); }
+  /* Botões desabilitados para colaboradores */
+  .btn-icon:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(26,20,16,0.7); backdrop-filter: blur(4px); z-index: 200; align-items: center; justify-content: center; padding: 1rem; }
+  .modal-overlay.open { display: flex; }
+  .modal-form { background: var(--white); border-radius: var(--r-xl); max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; animation: slideUp 0.3s cubic-bezier(0.16,1,0.3,1); }
+  @keyframes slideUp { from { opacity:0; transform:translateY(20px) scale(0.97); } to { opacity:1; transform:none; } }
+  .modal-form-header { padding: 1.5rem 2rem; border-bottom: 1px solid var(--paper-2); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--white); z-index: 2; }
+  .modal-form-header h2 { font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); }
+  .modal-close-btn { width: 36px; height: 36px; background: var(--paper-2); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; color: var(--ink-3); }
+  .modal-form-body { padding: 2rem; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+  .form-row-1 { margin-bottom: 1rem; }
+  .form-row label, .form-row-1 label { display: block; font-size: 0.8125rem; font-weight: 600; color: var(--ink-2); margin-bottom: 0.4rem; }
+  .form-row input, .form-row-1 input, .form-row select, .form-row-1 textarea {
+    width: 100%; font-family: var(--font-body); font-size: 0.9375rem; color: var(--ink);
+    background: var(--white); border: 1.5px solid var(--paper-3); border-radius: var(--r-md);
+    padding: 0.75rem 1rem; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .form-row input:focus, .form-row-1 input:focus, .form-row select:focus, .form-row-1 textarea:focus {
+    border-color: var(--brand); box-shadow: 0 0 0 3px rgba(121,145,252,0.15);
+  }
+  .form-row-1 textarea { resize: vertical; min-height: 80px; }
+  .lotes-section { margin-bottom: 1rem; }
+  .lotes-section h4 { font-family: var(--font-display); font-size: 0.9375rem; font-weight: 700; color: var(--ink); margin-bottom: 0.875rem; }
+  .lote-row { display: grid; grid-template-columns: 1fr 100px 80px 32px; gap: 0.5rem; align-items: end; margin-bottom: 0.5rem; }
+  .lote-row label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--ink-3); margin-bottom: 0.3rem; }
+  .lote-row input { font-family: var(--font-body); font-size: 0.875rem; color: var(--ink); background: var(--white); border: 1.5px solid var(--paper-3); border-radius: var(--r-sm); padding: 0.625rem 0.75rem; outline: none; width: 100%; transition: border-color 0.2s; }
+  .lote-row input:focus { border-color: var(--brand); }
+  .btn-remove-lote { width: 32px; height: 36px; background: none; border: 1.5px solid var(--paper-3); border-radius: var(--r-sm); cursor: pointer; color: var(--ink-3); font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: border-color 0.2s, color 0.2s; }
+  .btn-remove-lote:hover { border-color: var(--danger); color: var(--danger); }
+  .btn-add-lote { font-family: var(--font-body); font-size: 0.8125rem; font-weight: 600; color: var(--brand); background: var(--brand-light); border: 1.5px dashed var(--brand); border-radius: var(--r-sm); padding: 0.5rem 1rem; cursor: pointer; transition: background 0.2s; }
+  .btn-add-lote:hover { background: rgba(121,145,252,0.2); }
+  .modal-form-footer { padding: 1.25rem 2rem; border-top: 1px solid var(--paper-2); display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem; position: sticky; bottom: 0; background: var(--white); }
+
+  .alert { border-radius: var(--r-md); padding: 0.875rem 1rem; font-size: 0.85rem; display: none; align-items: flex-start; gap: 0.625rem; margin-bottom: 1.25rem; }
+  .alert.show { display: flex; }
+  .alert.danger { background: var(--danger-bg); color: #791F1F; }
+
+  .empty-row td { text-align: center; padding: 3rem; color: var(--ink-3); font-size: 0.875rem; }
+
+  .auth-wall { text-align: center; padding: 5rem 2rem; }
+  .auth-wall h2 { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; color: var(--ink); margin-bottom: 0.5rem; }
+  .auth-wall p { color: var(--ink-3); margin-bottom: 1.75rem; }
+
+  /* Banner de aviso para colaborador (somente leitura) */
+  .readonly-banner {
+    background: rgba(121,145,252,0.08);
+    border: 1px solid rgba(121,145,252,0.25);
+    color: #5a6fd6;
+    border-radius: var(--r-md);
+    padding: 0.75rem 1.25rem;
+    font-size: 0.875rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+  }
+
+  @media (max-width: 900px) {
+    .dash-layout { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .dash-main { padding: 1.5rem 1rem; }
+  }
+  @media (max-width: 600px) {
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .form-row { grid-template-columns: 1fr; }
+    .lote-row { grid-template-columns: 1fr 80px 60px 32px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">Happy<span>Hour</span></a>
+  <ul class="nav-links">
+    <li><a href="index.html">Ver site público</a></li>
+  </ul>
+  <div class="nav-cta" id="navCta">
+    <!-- preenchido pelo JS -->
+  </div>
+</nav>
+
+<div id="authWall" class="auth-wall" style="display:none;">
+  <div style="font-size:3rem;margin-bottom:1rem;">🔒</div>
+  <h2>Acesso restrito a organizadores</h2>
+  <p>Faça login com sua conta de organizador ou colaborador para acessar o painel.</p>
+  <a href="login.html" class="btn-primary btn-lg" style="text-decoration:none;display:inline-block;">Fazer login</a>
+</div>
+
+<div class="dash-layout" id="dashLayout" style="display:none;">
+
+  <aside class="sidebar">
+    <div class="sidebar-org">
+      <div class="org-name" id="sidebarOrgName">—</div>
+      <div class="org-type" id="sidebarOrgType">Carregando…</div>
+    </div>
+    <ul class="sidebar-nav">
+      <li><a href="#" class="active">📊 Painel</a></li>
+      <li><a href="#">🎪 Meus eventos</a></li>
+      <li><a href="#">🎟 Ingressos vendidos</a></li>
+      <li><a href="#">📈 Relatórios</a></li>
+      <hr class="sidebar-sep">
+      <li><a href="#">⚙️ Configurações</a></li>
+      <li><button onclick="fazerLogout()">↩ Sair</button></li>
+    </ul>
+  </aside>
+
+  <main class="dash-main">
+    <!-- Aviso para colaboradores (somente leitura) -->
+    <div class="readonly-banner" id="readonlyBanner" style="display:none;">
+      ℹ️ Você está logado como <strong>Colaborador</strong>. Você pode visualizar os eventos, mas apenas o organizador dono pode criar, editar ou excluir.
+    </div>
+
+    <div class="dash-header">
+      <h1>Painel de Gestão</h1>
+      <!-- Botão "Criar evento" só aparece para o organizador dono -->
+      <button class="btn-primary btn-lg" id="btnCriarEvento" onclick="openCreateModal()" style="display:none;">+ Criar evento</button>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-val highlight" id="kpiEventos">0</div>
+        <div class="kpi-label">Eventos ativos</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-val" id="kpiVendidos">0</div>
+        <div class="kpi-label">Ingressos vendidos</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-val success" id="kpiReceita">R$ 0</div>
+        <div class="kpi-label">Receita total</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-val" id="kpiOcup">0%</div>
+        <div class="kpi-label">Ocupação média</div>
+      </div>
+    </div>
+
+    <div class="events-table-wrap">
+      <div class="table-header">
+        <h2>Meus Eventos</h2>
+        <div style="display:flex;gap:0.5rem;">
+          <div class="search-box" style="min-width:200px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" placeholder="Buscar eventos…" oninput="filterTable(this.value)" style="border:none;background:none;padding:0.625rem 0;outline:none;font-family:var(--font-body);font-size:0.875rem;width:100%;">
+          </div>
+        </div>
+      </div>
+      <table class="events-table" id="eventsTable">
+        <thead>
+          <tr><th>Evento</th><th>Data</th><th>Vendas</th><th>Ocupação</th><th>Status</th><th>Ações</th></tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- Modal de criar/editar evento -->
+<div class="modal-overlay" id="eventModal" onclick="closeModalOutside(event)">
+  <div class="modal-form">
+    <div class="modal-form-header">
+      <h2 id="modalTitle">Criar evento</h2>
+      <button class="modal-close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-form-body">
+      <div class="alert danger" id="formAlert">
+        <span>⚠️</span>
+        <span id="formAlertMsg">Preencha todos os campos obrigatórios.</span>
+      </div>
+
+      <div class="form-row-1">
+        <label for="evNome">Nome do evento *</label>
+        <input type="text" id="evNome" placeholder="Ex: Festival de Verão 2027">
+      </div>
+      <div class="form-row-1">
+        <label for="evDesc">Descrição</label>
+        <textarea id="evDesc" placeholder="Descreva o evento para o público…"></textarea>
+      </div>
+      <div class="form-row">
+        <div>
+          <label for="evData">Data *</label>
+          <input type="date" id="evData">
+        </div>
+        <div>
+          <label for="evHora">Horário *</label>
+          <input type="time" id="evHora">
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label for="evLocal">Local *</label>
+          <input type="text" id="evLocal" placeholder="Fundição Progresso — Lapa">
+        </div>
+        <div>
+          <label for="evCapacidade">Capacidade máxima *</label>
+          <input type="number" id="evCapacidade" placeholder="500" min="1">
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label for="evCategoria">Categoria *</label>
+          <select id="evCategoria">
+            <option value="">Selecione…</option>
+            <option value="rock">🎸 Rock</option>
+            <option value="samba">🥁 Samba</option>
+            <option value="jazz">🎷 Jazz</option>
+            <option value="pop">🎤 Pop</option>
+            <option value="indie">🎻 Indie</option>
+          </select>
+        </div>
+        <div>
+          <label for="evStatus">Status</label>
+          <select id="evStatus">
+            <option value="rascunho">Rascunho</option>
+            <option value="ativo">Publicado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="lotes-section">
+        <h4>Lotes de ingressos</h4>
+        <div id="lotesRows"></div>
+        <button class="btn-add-lote" onclick="addLote()">+ Adicionar lote</button>
+      </div>
+    </div>
+    <div class="modal-form-footer">
+      <button class="btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary btn-lg" id="saveEventBtn" onclick="saveEvent()">Salvar evento</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmação de exclusão -->
+<div class="modal-overlay" id="deleteModal" onclick="closeDeleteOutside(event)">
+  <div class="modal-form" style="max-width:400px;">
+    <div class="modal-form-header">
+      <h2>Excluir evento</h2>
+      <button class="modal-close-btn" onclick="document.getElementById('deleteModal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-form-body" style="text-align:center;">
+      <div style="font-size:2rem;margin-bottom:1rem;">🗑</div>
+      <p style="font-size:0.9375rem;color:var(--ink-2);margin-bottom:0.5rem;">Tem certeza que deseja excluir este evento?</p>
+      <p style="font-size:0.8125rem;color:var(--ink-3);margin-bottom:1.75rem;">Esta ação não pode ser desfeita. Os ingressos já vendidos serão cancelados automaticamente.</p>
+      <div style="display:flex;gap:0.75rem;">
+        <button onclick="document.getElementById('deleteModal').classList.remove('open')" style="flex:1;font-family:var(--font-body);font-size:0.9rem;font-weight:500;border:1.5px solid var(--paper-3);background:none;color:var(--ink-2);border-radius:var(--r-md);padding:0.75rem;cursor:pointer;">Cancelar</button>
+        <button id="confirmDeleteBtn" onclick="doDelete()" style="flex:1;font-family:var(--font-body);font-size:0.9rem;font-weight:600;border:none;background:var(--danger);color:var(--white);border-radius:var(--r-md);padding:0.75rem;cursor:pointer;">Excluir evento</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <div class="toast-icon">✓</div>
+  <span id="toastMsg">Evento salvo!</span>
+</div>
+
+<script>
+// ============================================================
+//  painel_organizador.js — CORRIGIDO
+//  Bugs resolvidos:
+//  1. init() agora lê as chaves corretas do localStorage (usuarioLogado/usuarioTipo)
+//     em vez de só 'orgLogado', que nunca era salvo pelo login.js antigo
+//  2. Badge de tipo exibido na nav (Organizador vs Colaborador)
+//  3. Botões de editar/excluir DESABILITADOS para colaboradores
+//  4. Botão "Criar evento" OCULTO para colaboradores
+//  5. Banner informativo para colaboradores
+//  6. fazerLogout limpa TODAS as chaves corretamente
+//  7. Segundo bloco de script (que conflitava) removido
+// ============================================================
+
+const API_BASE   = 'http://127.0.0.1:8000/api';
+let orgEvents    = [];
+let editingId    = null;
+let deleteId     = null;
+let organizadorId = null;
+let usuarioTipo   = 'colaborador'; // padrão conservador
+
+// ID do dono do sistema (o Thiago / organizador principal).
+// O backend deve retornar este ID no login do organizador dono.
+// Aqui guardamos o valor que veio do login na variável organizadorId.
+// Um colaborador tem tipo='colaborador' e NÃO é o dono → sem edição.
+
+const eventsMock = [
+  { id_evento: "1", titulo: 'Rock in Rio de Janeiro 2026',    data_hora: '2026-09-15T19:00:00', local: 'Cidade do Rock — Barra da Tijuca', capacidade_maxima: 5000,  vendidos: 4800, categoria: 'rock',  status: 'ativo',    receita: 720000 },
+  { id_evento: "2", titulo: 'Feira de Música Independente',   data_hora: '2026-11-20T14:00:00', local: 'Centro de Convenções — Barra da Tijuca',  capacidade_maxima: 1500,  vendidos: 900,  categoria: 'indie', status: 'ativo',    receita: 45000  },
+  { id_evento: "3", titulo: 'Festival de Verão 2027',         data_hora: '2027-01-10T18:00:00', local: 'Praia de Ipanema',                        capacidade_maxima: 3000,  vendidos: 0,    categoria: 'pop',   status: 'rascunho', receita: 0      }
+];
+
+// ── INIT ──────────────────────────────────────────────────
+function init() {
+  // Lê as chaves salvas pelo login.js corrigido
+  const nome = localStorage.getItem('usuarioLogado');
+  organizadorId = localStorage.getItem('usuarioId')   || localStorage.getItem('orgId');
+  usuarioTipo   = localStorage.getItem('usuarioTipo') || localStorage.getItem('orgTipo') || '';
+
+  // Se não está logado ou não é org/colaborador, bloqueia
+  if (!nome || (usuarioTipo !== 'organizador' && usuarioTipo !== 'colaborador')) {
+    document.getElementById('authWall').style.display = 'block';
+    return;
+  }
+
+  // Mostra o layout
+  document.getElementById('dashLayout').style.display = 'grid';
+
+  // Atualiza sidebar
+  document.getElementById('sidebarOrgName').textContent = nome;
+  document.getElementById('sidebarOrgType').textContent =
+    usuarioTipo === 'organizador' ? 'Organizador de eventos' : 'Colaborador';
+
+  // Atualiza nav com badge correto
+  const navCta = document.getElementById('navCta');
+  if (navCta) {
+    const badgeHtml = usuarioTipo === 'organizador'
+      ? `<span class="org-badge">Organizador</span>`
+      : `<span class="colab-badge">Colaborador</span>`;
+    navCta.innerHTML = `
+      ${badgeHtml}
+      <span style="font-weight:600;color:rgba(255,255,255,0.85);font-size:0.875rem;">${nome.split(' ')[0]}</span>
+      <button onclick="fazerLogout()" class="btn-ghost" style="color:rgba(255,255,255,0.5);">Sair</button>`;
+  }
+
+  // ── PERMISSÕES ────────────────────────────────────────────
+  // Somente o organizador (dono) pode criar/editar/excluir eventos
+  const isDono = usuarioTipo === 'organizador';
+
+  if (isDono) {
+    document.getElementById('btnCriarEvento').style.display = 'inline-flex';
+  } else {
+    // Colaborador: mostra banner de aviso
+    document.getElementById('readonlyBanner').style.display = 'flex';
+  }
+
+  carregarEventos();
+}
+
+// ── CARREGAR EVENTOS ───────────────────────────────────────
+async function carregarEventos() {
+  try {
+    if (organizadorId) {
+      const response = await fetch(`${API_BASE}/organizadores/${organizadorId}/eventos`);
+      if (response.ok) {
+        orgEvents = await response.json();
+      } else {
+        throw new Error('Erro ao carregar eventos');
+      }
+    } else {
+      throw new Error('ID do organizador não identificado');
+    }
+  } catch (error) {
+    console.error('Erro na API:', error);
+    orgEvents = eventsMock;
+    showToast('⚠️ Modo offline - usando dados de demonstração');
+  }
+
+  renderTable(orgEvents);
+  updateKPIs();
+}
+
+// ── LOGOUT ─────────────────────────────────────────────────
+function fazerLogout() {
+  localStorage.removeItem('usuarioLogado');
+  localStorage.removeItem('usuarioId');
+  localStorage.removeItem('usuarioTipo');
+  localStorage.removeItem('usuarioEmail');
+  localStorage.removeItem('orgLogado');
+  localStorage.removeItem('orgId');
+  localStorage.removeItem('orgTipo');
+  window.location.href = 'index.html';
+}
+
+// ── HELPERS ────────────────────────────────────────────────
+function fmtDate(d) {
+  if (!d) return '';
+  const date   = new Date(d);
+  const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+function formatDateTimeParaInput(dataHora) {
+  if (!dataHora) return { data: '', hora: '' };
+  const d    = new Date(dataHora);
+  const data = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const hora = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  return { data, hora };
+}
+
+// ── KPIs ───────────────────────────────────────────────────
+function updateKPIs() {
+  const ativos         = orgEvents.filter(e => e.status === 'ativo').length;
+  const totalVendidos  = orgEvents.reduce((s, e) => s + (e.vendidos || 0), 0);
+  const receitaTotal   = orgEvents.reduce((s, e) => s + (e.receita  || 0), 0);
+  const ocupacaoMedia  = orgEvents.length > 0
+    ? Math.round(orgEvents.reduce((s, e) => s + ((e.vendidos || 0) / (e.capacidade_maxima || 1) * 100), 0) / orgEvents.length)
+    : 0;
+  document.getElementById('kpiEventos').textContent  = ativos;
+  document.getElementById('kpiVendidos').textContent = totalVendidos.toLocaleString('pt-BR');
+  document.getElementById('kpiReceita').textContent  = `R$ ${(receitaTotal / 1000).toFixed(1)}k`;
+  document.getElementById('kpiOcup').textContent     = `${ocupacaoMedia}%`;
+}
+
+// ── TABELA ─────────────────────────────────────────────────
+function renderTable(list) {
+  const tbody  = document.getElementById('tableBody');
+  const isDono = usuarioTipo === 'organizador';
+
+  if (!list.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Nenhum evento encontrado. Crie seu primeiro evento!</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = list.map(ev => {
+    const pct        = ev.capacidade_maxima > 0 ? Math.round(((ev.vendidos || 0) / ev.capacidade_maxima) * 100) : 0;
+    const badgeClass = ev.status === 'ativo' ? 'badge-ativo' : ev.status === 'encerrado' ? 'badge-encerrado' : 'badge-rascunho';
+    const badgeLabel = ev.status === 'ativo' ? 'Publicado' : ev.status === 'encerrado' ? 'Encerrado' : 'Rascunho';
+    const dataFmt    = fmtDate(ev.data_hora);
+    const horaFmt    = ev.data_hora ? new Date(ev.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+
+    // Botões de ação: habilitados só para o dono
+    const acoes = isDono
+      ? `<button class="btn-icon" onclick="openEditModal('${ev.id_evento}')" title="Editar">✏️</button>
+         <button class="btn-icon danger" onclick="openDeleteModal('${ev.id_evento}')" title="Excluir">🗑</button>`
+      : `<button class="btn-icon" disabled title="Apenas o organizador pode editar">✏️</button>
+         <button class="btn-icon danger" disabled title="Apenas o organizador pode excluir">🗑</button>`;
+
+    return `<tr>
+      <td class="td-title">${ev.titulo}</td>
+      <td>${dataFmt} · ${horaFmt}</td>
+      <td>${(ev.vendidos || 0).toLocaleString('pt-BR')} / ${ev.capacidade_maxima.toLocaleString('pt-BR')}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:0.5rem;">
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+          <span style="font-size:0.75rem;color:var(--ink-3);">${pct}%</span>
+        </div>
+      </td>
+      <td><span class="td-badge ${badgeClass}">${badgeLabel}</span></td>
+      <td><div class="td-actions">${acoes}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterTable(q) {
+  const filtered = orgEvents.filter(e =>
+    e.titulo.toLowerCase().includes(q.toLowerCase()) ||
+    (e.local || '').toLowerCase().includes(q.toLowerCase())
+  );
+  renderTable(filtered);
+}
+
+// ── MODAL CREATE/EDIT ──────────────────────────────────────
+// Só chega aqui se for dono (botão está oculto para colaboradores)
+function openCreateModal() {
+  if (usuarioTipo !== 'organizador') { showToast('⚠️ Apenas o organizador pode criar eventos.'); return; }
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Criar evento';
+  clearForm();
+  addLote();
+  document.getElementById('eventModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function openEditModal(id) {
+  if (usuarioTipo !== 'organizador') { showToast('⚠️ Apenas o organizador pode editar eventos.'); return; }
+  const ev = orgEvents.find(e => e.id_evento === id);
+  if (!ev) return;
+
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'Editar evento';
+  document.getElementById('evNome').value       = ev.titulo;
+  document.getElementById('evDesc').value       = ev.descricao || '';
+  document.getElementById('evLocal').value      = ev.local || '';
+  document.getElementById('evCapacidade').value = ev.capacidade_maxima || '';
+  document.getElementById('evCategoria').value  = ev.categoria || 'rock';
+  document.getElementById('evStatus').value     = ev.status || 'rascunho';
+
+  const { data, hora } = formatDateTimeParaInput(ev.data_hora);
+  document.getElementById('evData').value = data;
+  document.getElementById('evHora').value = hora;
+
+  document.getElementById('lotesRows').innerHTML = '';
+  loteCount = 0;
+  (ev.lotes || [{ nome: 'Pista Geral', preco: 100, qty: ev.capacidade_maxima || 100 }]).forEach(l => addLote(l.nome, l.preco, l.qty));
+
+  document.getElementById('formAlert').classList.remove('show');
+  document.getElementById('eventModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function openDeleteModal(id) {
+  if (usuarioTipo !== 'organizador') { showToast('⚠️ Apenas o organizador pode excluir eventos.'); return; }
+  deleteId = id;
+  document.getElementById('deleteModal').classList.add('open');
+}
+
+function clearForm() {
+  ['evNome','evDesc','evData','evHora','evLocal','evCapacidade'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('evCategoria').value = '';
+  document.getElementById('evStatus').value    = 'rascunho';
+  document.getElementById('lotesRows').innerHTML = '';
+  document.getElementById('formAlert').classList.remove('show');
+  loteCount = 0;
+}
+
+let loteCount = 0;
+function addLote(nome = '', preco = '', qty = '') {
+  loteCount++;
+  const id  = loteCount;
+  const row = document.createElement('div');
+  row.className = 'lote-row';
+  row.id = `lote-${id}`;
+  row.innerHTML = `
+    <input type="text"   placeholder="Pista Geral" value="${nome}"  id="lnome-${id}">
+    <input type="number" placeholder="150"          value="${preco}" id="lpreco-${id}" min="0">
+    <input type="number" placeholder="100"          value="${qty}"   id="lqty-${id}"   min="1">
+    <button class="btn-remove-lote" onclick="removeLote(${id})">✕</button>`;
+  document.getElementById('lotesRows').appendChild(row);
+}
+
+function removeLote(id) {
+  const el = document.getElementById(`lote-${id}`);
+  if (el) el.remove();
+}
+
+function collectLotes() {
+  const lotes = [];
+  document.querySelectorAll('#lotesRows .lote-row').forEach(row => {
+    const idNum = row.id.split('-')[1];
+    const nome  = document.getElementById(`lnome-${idNum}`).value.trim();
+    const preco = parseFloat(document.getElementById(`lpreco-${idNum}`).value);
+    const qty   = parseInt(document.getElementById(`lqty-${idNum}`).value);
+    if (nome && !isNaN(preco) && !isNaN(qty)) lotes.push({ nome, preco, qty });
+  });
+  return lotes;
+}
+
+// ── SALVAR EVENTO ──────────────────────────────────────────
+async function saveEvent() {
+  // Dupla verificação no front-end
+  if (usuarioTipo !== 'organizador') {
+    showToast('⚠️ Apenas o organizador pode salvar eventos.');
+    return;
+  }
+
+  const nome       = document.getElementById('evNome').value.trim();
+  const data       = document.getElementById('evData').value;
+  const hora       = document.getElementById('evHora').value;
+  const local      = document.getElementById('evLocal').value.trim();
+  const capacidade = parseInt(document.getElementById('evCapacidade').value);
+  const categoria  = document.getElementById('evCategoria').value;
+  const status     = document.getElementById('evStatus').value;
+  const descricao  = document.getElementById('evDesc').value.trim();
+  const lotes      = collectLotes();
+
+  if (!nome || !data || !hora || !local || !capacidade || !categoria) {
+    document.getElementById('formAlertMsg').textContent = 'Preencha todos os campos obrigatórios.';
+    document.getElementById('formAlert').classList.add('show');
+    return;
+  }
+
+  const dataHora = `${data}T${hora}:00`;
+  const payload  = { titulo: nome, descricao, data_hora: dataHora, local, capacidade_maxima: capacidade, categoria, status };
+
+  const btn = document.getElementById('saveEventBtn');
+  btn.classList.add('loading');
+
+  try {
+    if (editingId) {
+      const response = await fetch(`${API_BASE}/eventos/${editingId}?id_organizador=${organizadorId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (response.ok) {
+        const updated = await response.json();
+        const idx = orgEvents.findIndex(e => e.id_evento === editingId);
+        if (idx > -1) orgEvents[idx] = { ...orgEvents[idx], ...updated, ...payload };
+        showToast('Evento atualizado com sucesso!');
+      } else {
+        throw new Error('Erro na atualização');
+      }
+    } else {
+      const response = await fetch(`${API_BASE}/eventos?id_organizador=${organizadorId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (response.ok) {
+        const newEv = await response.json();
+        orgEvents.unshift({ ...newEv, vendidos: 0, receita: 0, status });
+        showToast('Evento criado com sucesso!');
+      } else {
+        throw new Error('Erro na criação');
+      }
+    }
+    closeModal();
+    renderTable(orgEvents);
+    updateKPIs();
+  } catch (error) {
+    console.error('Erro ao salvar evento:', error);
+    // Fallback offline
+    if (editingId) {
+      const idx = orgEvents.findIndex(e => e.id_evento === editingId);
+      if (idx > -1) orgEvents[idx] = { ...orgEvents[idx], ...payload };
+    } else {
+      orgEvents.unshift({ id_evento: Date.now().toString(), ...payload, vendidos: 0, receita: 0 });
+    }
+    closeModal();
+    renderTable(orgEvents);
+    updateKPIs();
+    showToast(editingId ? 'Evento atualizado (modo offline)' : 'Evento criado (modo offline)');
+  } finally {
+    btn.classList.remove('loading');
+  }
+}
+
+// ── EXCLUIR EVENTO ─────────────────────────────────────────
+async function doDelete() {
+  if (!deleteId || usuarioTipo !== 'organizador') return;
+
+  try {
+    const response = await fetch(`${API_BASE}/eventos/${deleteId}?id_organizador=${organizadorId}`, {
+      method: 'DELETE'
+    });
+    if (!response.ok && response.status !== 204) throw new Error('Erro na exclusão');
+  } catch (error) {
+    console.error('Erro ao excluir via API:', error);
+  }
+
+  orgEvents = orgEvents.filter(e => e.id_evento !== deleteId);
+  document.getElementById('deleteModal').classList.remove('open');
+  renderTable(orgEvents);
+  updateKPIs();
+  showToast('Evento excluído.');
+  deleteId = null;
+}
+
+// ── MODAL HELPERS ──────────────────────────────────────────
+function closeModal() {
+  document.getElementById('eventModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function closeModalOutside(e) {
+  if (e.target === document.getElementById('eventModal')) closeModal();
+}
+
+function closeDeleteOutside(e) {
+  if (e.target === document.getElementById('deleteModal')) document.getElementById('deleteModal').classList.remove('open');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── INICIALIZA ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
