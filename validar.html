@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Happy Hour — Validar Acesso</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="global.css">
+<style>
+  .validation-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
+  }
+  .validation-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    animation: fadeUp 0.5s ease both;
+  }
+  .validation-header h1 {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    margin-bottom: 0.5rem;
+  }
+  .validation-header p {
+    font-size: 0.9375rem;
+    color: var(--ink-3);
+  }
+  .scanner-area {
+    background: var(--white);
+    border-radius: var(--r-xl);
+    border: 1px solid var(--paper-3);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+    animation: fadeUp 0.5s 0.05s ease both;
+  }
+  .scanner-preview {
+    background: var(--ink);
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .scanner-placeholder {
+    text-align: center;
+    color: rgba(255,255,255,0.6);
+  }
+  .scanner-placeholder svg {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+  .scanner-placeholder span {
+    display: block;
+    font-size: 0.875rem;
+  }
+  .input-area {
+    padding: 1.5rem;
+    border-top: 1px solid var(--paper-2);
+  }
+  .qr-input {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .qr-input input {
+    flex: 1;
+    font-family: monospace;
+    font-size: 0.875rem;
+    color: var(--ink);
+    background: var(--white);
+    border: 1.5px solid var(--paper-3);
+    border-radius: var(--r-md);
+    padding: 0.875rem 1rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    letter-spacing: 0.03em;
+  }
+  .qr-input input:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(121,145,252,0.15);
+  }
+  .btn-scan {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--white);
+    background: var(--brand);
+    border: none;
+    border-radius: var(--r-md);
+    padding: 0.875rem 1.5rem;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    white-space: nowrap;
+  }
+  .btn-scan:hover {
+    background: var(--brand-mid);
+    transform: translateY(-1px);
+  }
+  .btn-scan:active {
+    transform: translateY(0);
+  }
+  .mock-camera {
+    background: rgba(121,145,252,0.08);
+    border-radius: var(--r-md);
+    padding: 0.75rem 1rem;
+    font-size: 0.8125rem;
+    color: var(--ink-3);
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .mock-camera:hover {
+    background: rgba(121,145,252,0.15);
+    color: var(--ink-2);
+  }
+  .result-area {
+    background: var(--white);
+    border-radius: var(--r-xl);
+    border: 1px solid var(--paper-3);
+    padding: 1.5rem;
+    animation: fadeUp 0.5s 0.1s ease both;
+  }
+  .result-card {
+    text-align: center;
+  }
+  .result-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 1.75rem;
+  }
+  .result-icon.success {
+    background: var(--success-bg);
+    color: var(--success);
+  }
+  .result-icon.error {
+    background: var(--danger-bg);
+    color: var(--danger);
+  }
+  .result-icon.pending {
+    background: var(--paper-2);
+    color: var(--ink-3);
+  }
+  .result-title {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 0.5rem;
+  }
+  .result-message {
+    font-size: 0.875rem;
+    color: var(--ink-3);
+    margin-bottom: 0.75rem;
+  }
+  .result-detail {
+    background: var(--paper);
+    border-radius: var(--r-md);
+    padding: 1rem;
+    font-size: 0.8125rem;
+    color: var(--ink-2);
+    text-align: left;
+    margin-top: 1rem;
+  }
+  .result-detail-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+  .result-detail-row:last-child {
+    margin-bottom: 0;
+  }
+  .result-detail-label {
+    font-weight: 600;
+    color: var(--ink-3);
+  }
+  .event-badge {
+    display: inline-block;
+    background: var(--brand-light);
+    color: var(--brand-mid);
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.25rem 0.75rem;
+    border-radius: 99px;
+    margin-top: 1rem;
+  }
+  .btn-reset {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--brand);
+    background: none;
+    border: 1.5px solid var(--brand);
+    border-radius: var(--r-md);
+    padding: 0.75rem 1.5rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    width: 100%;
+    margin-top: 1rem;
+  }
+  .btn-reset:hover {
+    background: var(--brand-light);
+  }
+  .hidden {
+    display: none;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .scanning {
+    animation: pulse 1.5s infinite;
+  }
+  @media (max-width: 480px) {
+    .validation-container { padding: 1.5rem; }
+    .qr-input { flex-direction: column; }
+    .btn-scan { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">Happy<span>Hour</span></a>
+  <ul class="nav-links">
+    <li><a href="index.html">Ver site público</a></li>
+    <li><a href="login-organizador.html">Para Organizadores</a></li>
+  </ul>
+  <div class="nav-cta" id="navCta">
+    <span class="org-badge" style="background:rgba(121,145,252,0.15);color:var(--brand);padding:0.25rem 0.625rem;border-radius:99px;font-size:0.72rem;font-weight:700;">Validador</span>
+    <span style="font-weight:600;color:var(--ink);font-size:0.875rem;" id="validadorNome">Lucas Oliveira</span>
+    <button onclick="fazerLogout()" class="btn-ghost" style="color:var(--ink-3);">Sair</button>
+  </div>
+</nav>
+
+<div class="validation-container">
+
+  <div class="validation-header">
+    <h1>🎟 Validar Acesso</h1>
+    <p>Escaneie o QR Code do ingresso ou digite o código manualmente</p>
+  </div>
+
+  <div class="scanner-area">
+    <div class="scanner-preview" id="scannerPreview">
+      <div class="scanner-placeholder" id="scannerPlaceholder">
+        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+          <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+          <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+          <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 9v1" />
+          <path d="M12 15v1" />
+          <path d="M15 12h-1" />
+          <path d="M9 12H8" />
+        </svg>
+        <span>Câmera simulada — clique abaixo para testar</span>
+      </div>
+      <video id="video" autoplay playsinline style="display:none; width:100%; height:100%; object-fit:cover;"></video>
+    </div>
+    <div class="input-area">
+      <div class="qr-input">
+        <input type="text" id="qrCodeInput" placeholder="Digite ou cole o código do ingresso" autocomplete="off">
+        <button class="btn-scan" onclick="validarTicket()">Validar</button>
+      </div>
+      <div class="mock-camera" onclick="simularQRCode()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <rect x="2" y="4" width="20" height="16" rx="2" />
+          <circle cx="12" cy="12" r="3" />
+          <path d="M2 8h2M20 8h2" />
+        </svg>
+        <span>Simular leitura (QR-ROCK2026-ANA-001)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="result-area hidden" id="resultArea">
+    <div class="result-card">
+      <div class="result-icon" id="resultIcon"></div>
+      <div class="result-title" id="resultTitle"></div>
+      <div class="result-message" id="resultMessage"></div>
+      <div class="result-detail hidden" id="resultDetail">
+        <div class="result-detail-row">
+          <span class="result-detail-label">Ingresso</span>
+          <span id="detailQR"></span>
+        </div>
+        <div class="result-detail-row">
+          <span class="result-detail-label">Cliente</span>
+          <span id="detailCliente"></span>
+        </div>
+        <div class="result-detail-row">
+          <span class="result-detail-label">Evento</span>
+          <span id="detailEvento"></span>
+        </div>
+      </div>
+      <button class="btn-reset" onclick="resetScanner()">Nova validação</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span class="footer-logo">HappyHour</span>
+  <p>© 2026 Happy Hour — Escola de Informática Aplicada, UNIRIO</p>
+  <p style="margin-top:0.5rem;">Desenvolvido por Thiago Porto Scarano &amp; Felipe Fionda</p>
+</footer>
+
+<div class="toast" id="toast">
+  <div class="toast-icon">✓</div>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+const API_BASE = 'http://127.0.0.1:8000/api';
+
+let eventoSelecionadoId = null;
+
+function init() {
+  const nome = localStorage.getItem('usuarioLogado');
+  if (nome) {
+    const pN = nome.split(' ')[0];
+    document.getElementById('validadorNome').textContent = pN;
+    document.getElementById('navCta').innerHTML = `
+      <span class="org-badge" style="background:rgba(121,145,252,0.15);color:var(--brand);padding:0.25rem 0.625rem;border-radius:99px;font-size:0.72rem;font-weight:700;">Validador</span>
+      <span style="font-weight:600;color:var(--ink);font-size:0.875rem;">👋 ${pN}</span>
+      <button onclick="fazerLogout()" class="btn-ghost" style="color:var(--ink-3);">Sair</button>
+    `;
+  } else {
+    localStorage.setItem('usuarioLogado', 'Lucas Oliveira');
+    document.getElementById('validadorNome').textContent = 'Lucas Oliveira';
+  }
+  
+  eventoSelecionadoId = localStorage.getItem('eventoValidador') || '1';
+}
+
+function fazerLogout() {
+  localStorage.removeItem('usuarioLogado');
+  window.location.reload();
+}
+
+function simularQRCode() {
+  document.getElementById('qrCodeInput').value = 'QR-ROCK2026-ANA-001';
+  validarTicket();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+async function validarTicket() {
+  const codigo = document.getElementById('qrCodeInput').value.trim();
+  if (!codigo) {
+    showToast('Digite ou cole um código QR');
+    return;
+  }
+
+  const btn = document.querySelector('.btn-scan');
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  const payload = {
+    id_evento: eventoSelecionadoId,
+    codigo_qr: codigo
+  };
+
+  try {
+    const response = await fetch(`${API_BASE}/checkin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const resultado = await response.json();
+
+    btn.classList.remove('loading');
+    btn.disabled = false;
+
+    const resultArea = document.getElementById('resultArea');
+    const resultIcon = document.getElementById('resultIcon');
+    const resultTitle = document.getElementById('resultTitle');
+    const resultMessage = document.getElementById('resultMessage');
+    const resultDetail = document.getElementById('resultDetail');
+    const detailQR = document.getElementById('detailQR');
+    const detailCliente = document.getElementById('detailCliente');
+    const detailEvento = document.getElementById('detailEvento');
+
+    if (resultado.autorizado) {
+      resultIcon.className = 'result-icon success';
+      resultIcon.innerHTML = '✅';
+      resultTitle.textContent = 'ENTRADA AUTORIZADA';
+      resultMessage.textContent = resultado.mensagem;
+      detailQR.textContent = codigo;
+      detailCliente.textContent = resultado.nome_cliente || 'Cliente';
+      detailEvento.textContent = 'Evento ' + eventoSelecionadoId;
+      resultDetail.classList.remove('hidden');
+      resultArea.classList.remove('hidden');
+      showToast(`✅ ${resultado.mensagem}`);
+      document.getElementById('qrCodeInput').value = '';
+    } else {
+      resultIcon.className = 'result-icon error';
+      resultIcon.innerHTML = '❌';
+      resultTitle.textContent = 'ACESSO NEGADO';
+      resultMessage.textContent = resultado.mensagem;
+      detailQR.textContent = codigo;
+      detailCliente.textContent = '---';
+      detailEvento.textContent = 'Evento ' + eventoSelecionadoId;
+      resultDetail.classList.remove('hidden');
+      resultArea.classList.remove('hidden');
+      showToast(`❌ ${resultado.mensagem}`);
+    }
+  } catch (error) {
+    console.error('Erro na validação:', error);
+    
+    btn.classList.remove('loading');
+    btn.disabled = false;
+    
+    const ticketsMock = [
+      { codigo_qr: "QR-ROCK2026-ANA-001", status: "ativo", nome_cliente: "Ana Paula Lima", id_evento: "1", titulo_evento: "Rock in Rio de Janeiro 2026" },
+      { codigo_qr: "QR-ROCK2026-BRUNO-002", status: "utilizado", nome_cliente: "Bruno Carvalho", id_evento: "1", titulo_evento: "Rock in Rio de Janeiro 2026" }
+    ];
+    
+    const resultado = ticketsMock.find(t => t.codigo_qr === codigo);
+    
+    const resultArea = document.getElementById('resultArea');
+    const resultIcon = document.getElementById('resultIcon');
+    const resultTitle = document.getElementById('resultTitle');
+    const resultMessage = document.getElementById('resultMessage');
+    const resultDetail = document.getElementById('resultDetail');
+    const detailQR = document.getElementById('detailQR');
+    const detailCliente = document.getElementById('detailCliente');
+    const detailEvento = document.getElementById('detailEvento');
+
+    if (!resultado) {
+      resultIcon.className = 'result-icon error';
+      resultIcon.innerHTML = '❌';
+      resultTitle.textContent = 'ACESSO NEGADO';
+      resultMessage.textContent = 'QR Code inválido ou não reconhecido.';
+      detailQR.textContent = codigo;
+      detailCliente.textContent = '---';
+      detailEvento.textContent = 'Evento ' + eventoSelecionadoId;
+      resultDetail.classList.remove('hidden');
+      resultArea.classList.remove('hidden');
+      return;
+    }
+
+    if (resultado.status === 'utilizado') {
+      resultIcon.className = 'result-icon error';
+      resultIcon.innerHTML = '❌';
+      resultTitle.textContent = 'ACESSO NEGADO';
+      resultMessage.textContent = 'Este ingresso já foi validado anteriormente.';
+      detailQR.textContent = resultado.codigo_qr;
+      detailCliente.textContent = resultado.nome_cliente;
+      detailEvento.textContent = resultado.titulo_evento;
+      resultDetail.classList.remove('hidden');
+      resultArea.classList.remove('hidden');
+      return;
+    }
+
+    if (resultado.status === 'ativo') {
+      resultado.status = 'utilizado';
+      resultIcon.className = 'result-icon success';
+      resultIcon.innerHTML = '✅';
+      resultTitle.textContent = 'ENTRADA AUTORIZADA';
+      resultMessage.textContent = 'Acesso liberado! Bem-vindo(a) ao evento.';
+      detailQR.textContent = resultado.codigo_qr;
+      detailCliente.textContent = resultado.nome_cliente;
+      detailEvento.textContent = resultado.titulo_evento;
+      resultDetail.classList.remove('hidden');
+      resultArea.classList.remove('hidden');
+      showToast(`✅ Entrada liberada para ${resultado.nome_cliente}`);
+      document.getElementById('qrCodeInput').value = '';
+    }
+  }
+}
+
+function resetScanner() {
+  document.getElementById('resultArea').classList.add('hidden');
+  document.getElementById('qrCodeInput').value = '';
+  document.getElementById('qrCodeInput').focus();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

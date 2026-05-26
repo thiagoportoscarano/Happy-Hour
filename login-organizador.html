@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Happy Hour — Área do Organizador</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="global.css">
+<style>
+  .left-panel {
+    background: linear-gradient(160deg, #0f1623 0%, #1a2540 60%, #0d1220 100%);
+  }
+  .left-noise {
+    background-image:
+      radial-gradient(ellipse at 15% 25%, rgba(92, 119, 235, 0.22) 0%, transparent 50%),
+      radial-gradient(ellipse at 85% 75%, rgba(42, 60, 145, 0.45) 0%, transparent 55%),
+      radial-gradient(ellipse at 70% 10%, rgba(121, 145, 252, 0.12) 0%, transparent 40%);
+  }
+
+  .left-tag-org {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: rgba(255, 186, 80, 0.12);
+    border: 1px solid rgba(255, 186, 80, 0.3);
+    color: #FFCA70;
+    font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; padding: 0.35rem 0.875rem; border-radius: 99px;
+    margin-bottom: 1.75rem;
+  }
+  .left-tag-org::before {
+    content: ''; width: 6px; height: 6px;
+    background: #FFBA50; border-radius: 50%; display: inline-block;
+  }
+
+  .org-stats {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
+    margin-top: 2.5rem; max-width: 340px;
+  }
+  .org-stat-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: var(--r-md); padding: 1rem 1.125rem;
+    backdrop-filter: blur(4px);
+  }
+  .org-stat-card .stat-val {
+    font-family: var(--font-display); font-size: 1.5rem; font-weight: 800;
+    color: var(--brand); line-height: 1;
+  }
+  .org-stat-card .stat-lbl {
+    font-size: 0.72rem; color: rgba(255,255,255,0.35); margin-top: 0.3rem;
+    font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .org-stat-card.highlight .stat-val { color: #FFBA50; }
+
+  .back-link {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    font-size: 0.8rem; color: rgba(255,255,255,0.35); text-decoration: none;
+    position: relative; z-index: 2; transition: color 0.2s;
+    margin-bottom: 0.5rem;
+  }
+  .back-link:hover { color: rgba(255,255,255,0.65); }
+  .back-link svg { width: 12px; height: 12px; }
+
+  .tab-btn.active {
+    background: var(--white); color: var(--ink); font-weight: 600;
+    box-shadow: 0 1px 6px rgba(26,20,16,0.08);
+  }
+
+  .access-badge {
+    display: flex; align-items: center; gap: 0.625rem;
+    background: rgba(255, 186, 80, 0.1); border: 1px solid rgba(255, 186, 80, 0.25);
+    border-radius: var(--r-sm); padding: 0.625rem 0.875rem;
+    font-size: 0.78rem; color: #92670A; margin-bottom: 1.75rem;
+    animation: fadeUp 0.4s ease both;
+  }
+  .access-badge svg { flex-shrink: 0; color: #FFBA50; }
+
+  .cnpj-fmt {
+    font-size: 0.72rem; color: var(--ink-3); margin-top: 0.3rem;
+    font-family: monospace;
+  }
+
+  .org-type-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.625rem;
+    margin-bottom: 1.125rem;
+  }
+  .org-type-option {
+    border: 1.5px solid var(--paper-3); border-radius: var(--r-md);
+    padding: 0.875rem 0.75rem; cursor: pointer; text-align: center;
+    transition: border-color 0.2s, background 0.2s;
+    background: var(--white);
+  }
+  .org-type-option:hover { border-color: var(--brand); background: var(--brand-light); }
+  .org-type-option.selected { border-color: var(--brand); background: var(--brand-light); }
+  .org-type-option .type-icon { font-size: 1.375rem; display: block; margin-bottom: 0.3rem; }
+  .org-type-option .type-label {
+    font-size: 0.75rem; font-weight: 600; color: var(--ink-2);
+    line-height: 1.3;
+  }
+  .org-type-option.selected .type-label { color: var(--brand-mid); }
+
+  .field-label-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 0.4rem;
+  }
+  .field-label-row label { margin-bottom: 0; }
+  .optional-tag {
+    font-size: 0.68rem; color: var(--ink-3); font-weight: 400;
+    background: var(--paper-2); padding: 0.1rem 0.4rem; border-radius: 4px;
+  }
+
+  .divider-or {
+    display: flex; align-items: center; gap: 0.75rem;
+    margin: 1.25rem 0; color: var(--ink-3); font-size: 0.78rem;
+  }
+  .divider-or::before, .divider-or::after {
+    content: ''; flex: 1; height: 1px; background: var(--paper-3);
+  }
+
+  .btn-demo-org {
+    font-family: var(--font-body); font-size: 0.82rem; font-weight: 500;
+    color: var(--ink-2); background: var(--white);
+    border: 1.5px solid var(--paper-3); border-radius: var(--r-md);
+    padding: 0.7rem 1.5rem; cursor: pointer; width: 100%;
+    transition: border-color 0.2s, background 0.2s; letter-spacing: 0.01em;
+  }
+  .btn-demo-org:hover {
+    border-color: var(--brand); background: var(--brand-light);
+  }
+
+  .success-box-org { display: none; text-align: center; padding: 2rem 0; animation: fadeUp 0.5s ease both; }
+  .success-box-org.show { display: block; }
+  .success-icon-org {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: rgba(255,186,80,0.12);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1.5rem; font-size: 1.75rem;
+  }
+  .success-box-org h2 { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; color: var(--ink); margin-bottom: 0.5rem; }
+  .success-box-org p { font-size: 0.9rem; color: var(--ink-3); margin-bottom: 0.5rem; }
+  .success-detail {
+    background: var(--paper); border-radius: var(--r-md); padding: 0.875rem 1rem;
+    font-size: 0.8rem; color: var(--ink-2); margin: 1rem 0 1.75rem;
+    text-align: left; border: 1px solid var(--paper-3); line-height: 1.6;
+  }
+  .success-detail strong { color: var(--ink); }
+</style>
+</head>
+<body class="login-page">
+
+<div class="left-panel">
+  <div class="left-noise"></div>
+  <div class="left-grid"></div>
+
+  <div style="position:relative;z-index:2;">
+    <a href="index.html" class="back-link">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+      Voltar ao site
+    </a>
+    <a href="index.html" class="left-logo" style="display:block;">Happy<span>Hour</span></a>
+  </div>
+
+  <div class="left-content">
+    <div class="left-tag-org">Área do Organizador</div>
+    <h2>Crie eventos.<br><em>Venda mais.</em></h2>
+    <p>Acesse o painel de gestão, publique seus shows e acompanhe suas vendas em tempo real.</p>
+
+    <div class="org-stats">
+      <div class="org-stat-card">
+        <div class="stat-val">5</div>
+        <div class="stat-lbl">Eventos ativos</div>
+      </div>
+      <div class="org-stat-card highlight">
+        <div class="stat-val">140k</div>
+        <div class="stat-lbl">Ingressos vendidos</div>
+      </div>
+      <div class="org-stat-card">
+        <div class="stat-val">48h</div>
+        <div class="stat-lbl">Política de reembolso</div>
+      </div>
+      <div class="org-stat-card">
+        <div class="stat-val">QR</div>
+        <div class="stat-lbl">Check-in digital</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="left-footer">© 2026 Happy Hour · UNIRIO — Escola de Informática Aplicada</div>
+</div>
+
+<div class="right-panel">
+  <div class="form-container">
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tabLogin" onclick="switchTab('login')">Entrar</button>
+      <button class="tab-btn" id="tabRegister" onclick="switchTab('register')">Cadastrar organização</button>
+    </div>
+
+    <div id="loginForm">
+
+      <div class="access-badge">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        Acesso restrito a organizadores cadastrados.
+      </div>
+
+      <div class="form-header">
+        <h1>Entrar</h1>
+        <p>Acesse o painel de gestão com e-mail e senha.</p>
+      </div>
+
+      <div class="alert danger" id="loginAlert">
+        <span class="alert-icon">⚠️</span>
+        <span id="loginAlertMsg">E-mail ou senha incorretos. Tente novamente.</span>
+      </div>
+
+      <div class="field">
+        <label for="loginEmail">E-mail da organização</label>
+        <div class="input-wrap">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,12 2,6"/>
+          </svg>
+          <input type="email" id="loginEmail" placeholder="contato@suaempresa.com"
+                 autocomplete="email" oninput="clearLoginAlert()">
+        </div>
+        <div class="field-error" id="loginEmailErr">Informe um e-mail válido.</div>
+      </div>
+
+      <div class="field">
+        <label for="loginPwd">Senha</label>
+        <div class="input-wrap">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <input type="password" id="loginPwd" placeholder="Sua senha"
+                 autocomplete="current-password" oninput="clearLoginAlert()">
+          <button class="pwd-toggle" type="button" onclick="togglePwd('loginPwd',this)" aria-label="Mostrar senha">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+        <div class="field-error" id="loginPwdErr">Informe sua senha.</div>
+      </div>
+
+      <div class="forgot-row">
+        <a href="#" onclick="showForgot()">Esqueci minha senha</a>
+      </div>
+
+      <button class="btn-submit" id="loginBtn" onclick="doLogin()">
+        <span class="btn-text">Entrar no painel →</span>
+        <div class="spinner"></div>
+      </button>
+
+      <div class="divider-or">ou entre com a conta de demonstração</div>
+
+      <button class="btn-demo-org" onclick="loginAsOrg()">
+        Preencher com conta de teste (Organizador)
+      </button>
+    </div>
+
+    <div id="registerForm" style="display:none;">
+      <div class="form-header">
+        <h1>Criar organização</h1>
+        <p>Cadastre sua empresa ou produtora para publicar eventos.</p>
+      </div>
+
+      <div class="alert info" id="registerAlert" style="display:none;">
+        <span class="alert-icon">ℹ️</span>
+        <span id="registerAlertMsg"></span>
+      </div>
+
+      <div style="margin-bottom:1.125rem; animation: fadeUp 0.5s ease both;">
+        <label style="display:block; font-size:0.8125rem; font-weight:600; color:var(--ink-2); margin-bottom:0.625rem;">
+          Tipo de organização
+        </label>
+        <div class="org-type-grid" id="orgTypeGrid">
+          <div class="org-type-option selected" data-type="produtora" onclick="selectOrgType(this)">
+            <span class="type-icon">🎪</span>
+            <span class="type-label">Produtora de eventos</span>
+          </div>
+          <div class="org-type-option" data-type="casa_de_show" onclick="selectOrgType(this)">
+            <span class="type-icon">🎸</span>
+            <span class="type-label">Casa de show</span>
+          </div>
+          <div class="org-type-option" data-type="artista" onclick="selectOrgType(this)">
+            <span class="type-icon">🎤</span>
+            <span class="type-label">Artista / Banda</span>
+          </div>
+          <div class="org-type-option" data-type="outro" onclick="selectOrgType(this)">
+            <span class="type-icon">🏢</span>
+            <span class="type-label">Outro</span>
+          </div>
+        </div>
+        <div class="field-error" id="orgTypeErr" style="margin-top:-0.5rem;">Selecione o tipo de organização.</div>
+      </div>
+
+      <div class="field">
+        <label for="regNome">Nome da organização</label>
+        <div class="input-wrap">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          <input type="text" id="regNome" placeholder="DJ Productions Ltda" autocomplete="organization">
+        </div>
+        <div class="field-error" id="regNomeErr">Informe o nome da organização.</div>
+      </div>
+
+      <div class="field">
+        <label for="regResponsavel">Nome do responsável</label>
+        <div class="input-wrap">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <input type="text" id="regResponsavel" placeholder="Carlos Mendes" autocomplete="name">
+        </div>
+        <div class="field-error" id="regResponsavelErr">Informe o nome do responsável.</div>
+      </div>
+
+      <div class="field">
+        <label for="regEmail">E-mail de contato</label>
+        <div class="input-wrap">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,12 2,6"/>
+          </svg>
+          <input type="email" id="regEmail" placeholder="contato@suaempresa.com"
+                 autocomplete="email" oninput="validateEmailField()">
+        </div>
+        <div class="field-error" id="regEmailErr">E-mail inválido ou já cadastrado.</div>
+      </div>
+
+      <div class="field">
+        <div class="field-label-row">
+          <label for="regCpf">CPF do responsável</label>
+        </div>
+        <div class="input-wrap">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <rect x="2" y="5" width="20" height="14" rx="2"/>
+            <line x1="2" y1="10" x2="22" y2="10"/>
+          </svg>
+          <input type="text" id="regCpf" placeholder="000.000.000-00"
+                 maxlength="14" oninput="maskCpf(this)" autocomplete="off">
+        </div>
+        <div class="field-error" id="regCpfErr">CPF inválido ou já cadastrado.</div>
+        <div class="cnpj-fmt" id="cpfFmt">___.___.___-__</div>
+      </div>
+
+      <div class="field">
+        <label for="regPwd">Senha</label>
+        <div class="input-wrap">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <input type="password" id="regPwd" placeholder="Mín. 6 caracteres"
+                 autocomplete="new-password" oninput="checkStrength(this.value)">
+          <button class="pwd-toggle" type="button" onclick="togglePwd('regPwd',this)" aria-label="Mostrar senha">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+        <div class="field-error" id="regPwdErr">Mínimo 6 caracteres com letras e números.</div>
+        <div class="strength-bar">
+          <div class="strength-seg" id="s1"></div>
+          <div class="strength-seg" id="s2"></div>
+          <div class="strength-seg" id="s3"></div>
+        </div>
+        <div class="strength-label" id="strengthLabel">Digite uma senha</div>
+      </div>
+
+      <div class="field">
+        <label for="regPwdConfirm">Confirmar senha</label>
+        <div class="input-wrap">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <input type="password" id="regPwdConfirm" placeholder="Repita a senha"
+                 autocomplete="new-password" oninput="checkConfirm()">
+          <button class="pwd-toggle" type="button" onclick="togglePwd('regPwdConfirm',this)" aria-label="Mostrar senha">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+        <div class="field-error" id="regPwdConfirmErr">As senhas não coincidem.</div>
+      </div>
+
+      <div class="checkbox-row">
+        <input type="checkbox" id="termsCheck">
+        <label for="termsCheck">
+          Li e aceito os <a href="#">Termos para Organizadores</a> e a
+          <a href="#">Política de Privacidade</a>
+        </label>
+      </div>
+
+      <button class="btn-submit" id="registerBtn" onclick="doRegister()">
+        <span class="btn-text">Criar conta de organizador →</span>
+        <div class="spinner"></div>
+      </button>
+    </div>
+
+    <div class="success-box-org" id="successBox">
+      <div class="success-icon-org">🎉</div>
+      <h2>Cadastro enviado!</h2>
+      <p>Recebemos sua solicitação de acesso como organizador.</p>
+      <div class="success-detail">
+        Um e-mail de confirmação foi enviado para <strong id="successEmail"></strong>.<br>
+        Após a verificação, sua conta com perfil <strong>organizador</strong> estará ativa e você poderá criar eventos, definir lotes de ingressos e consultar relatórios de vendas.
+      </div>
+      <button class="btn-submit" onclick="switchTab('login')" style="display:block;width:100%;max-width:none;">
+        <span class="btn-text">Ir para o login →</span>
+        <div class="spinner"></div>
+      </button>
+    </div>
+
+    <div id="forgotForm" style="display:none;">
+      <div class="form-header">
+        <h1>Recuperar senha</h1>
+        <p>Informe o e-mail da organização para receber o link de redefinição.</p>
+      </div>
+
+      <div class="field">
+        <label for="forgotEmail">E-mail cadastrado</label>
+        <div class="input-wrap">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,12 2,6"/>
+          </svg>
+          <input type="email" id="forgotEmail" placeholder="contato@suaempresa.com">
+        </div>
+      </div>
+
+      <button class="btn-submit" onclick="doForgot()" style="margin-bottom:1rem;">
+        <span class="btn-text">Enviar link de recuperação</span>
+        <div class="spinner"></div>
+      </button>
+
+      <button onclick="switchTab('login')"
+        style="width:100%;font-family:var(--font-body);font-size:0.9rem;font-weight:500;
+               color:var(--ink-3);background:none;border:none;cursor:pointer;
+               padding:0.5rem;letter-spacing:0.01em;">
+        ← Voltar para o login
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const ORGS_DB = {
+  'contato@djprod.com':       { nome: 'DJ Productions Ltda',    senha: '123456' },
+  'eventos@festcarioca.com':  { nome: 'Festival Carioca S.A.',  senha: '123456' },
+  'contato@rockbrasil.com':   { nome: 'Rock Brasil Eventos',    senha: '123456' },
+};
+
+function switchTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('tabLogin').classList.toggle('active', isLogin);
+  document.getElementById('tabRegister').classList.toggle('active', !isLogin);
+  document.getElementById('loginForm').style.display    = isLogin ? 'block' : 'none';
+  document.getElementById('registerForm').style.display = !isLogin ? 'block' : 'none';
+  document.getElementById('successBox').classList.remove('show');
+  document.getElementById('forgotForm').style.display   = 'none';
+}
+
+function showForgot() {
+  document.getElementById('loginForm').style.display  = 'none';
+  document.getElementById('forgotForm').style.display = 'block';
+}
+
+function togglePwd(id, btn) {
+  const inp  = document.getElementById(id);
+  const show = inp.type === 'password';
+  inp.type   = show ? 'text' : 'password';
+  btn.innerHTML = show
+    ? `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+        <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+        <line x1="1" y1="1" x2="23" y2="23"/></svg>`
+    : `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+}
+
+function maskCpf(inp) {
+  let v = inp.value.replace(/\D/g, '').slice(0, 11);
+  if (v.length > 9)      v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4');
+  else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{0,3})/, '$1.$2.$3');
+  else if (v.length > 3) v = v.replace(/(\d{3})(\d{0,3})/, '$1.$2');
+  inp.value = v;
+  const raw = v.replace(/\D/g, '');
+  const fmt = document.getElementById('cpfFmt');
+  const tmpl = '___.___.___-__';
+  let disp = '', ri = 0;
+  for (let i = 0; i < tmpl.length; i++) {
+    disp += tmpl[i] === '_' ? (ri < raw.length ? raw[ri++] : '_') : tmpl[i];
+  }
+  fmt.textContent = disp;
+  fmt.style.color = raw.length === 11 ? 'var(--success)' : 'var(--ink-3)';
+}
+
+function checkStrength(pwd) {
+  const segs = [document.getElementById('s1'), document.getElementById('s2'), document.getElementById('s3')];
+  const lbl  = document.getElementById('strengthLabel');
+  let score  = 0;
+  if (pwd.length >= 6) score++;
+  if (/[a-zA-Z]/.test(pwd) && /\d/.test(pwd)) score++;
+  if (pwd.length >= 10 && /[^a-zA-Z0-9]/.test(pwd)) score++;
+  const cls    = ['weak', 'medium', 'strong'];
+  const texts  = ['Senha fraca', 'Senha razoável', 'Senha forte'];
+  const colors = ['var(--danger)', '#EF9F27', 'var(--success)'];
+  segs.forEach((s, i) => { s.className = 'strength-seg' + (i < score ? ' ' + cls[score - 1] : ''); });
+  if (!pwd.length) { lbl.textContent = 'Digite uma senha'; lbl.style.color = 'var(--ink-3)'; }
+  else { lbl.textContent = texts[score - 1] || 'Senha muito curta'; lbl.style.color = score ? colors[score - 1] : 'var(--danger)'; }
+}
+
+function checkConfirm() {
+  const p1  = document.getElementById('regPwd').value;
+  const p2  = document.getElementById('regPwdConfirm').value;
+  const err = document.getElementById('regPwdConfirmErr');
+  const inp = document.getElementById('regPwdConfirm');
+  if      (p2.length && p1 !== p2)  { err.classList.add('show'); inp.classList.add('error'); inp.classList.remove('valid'); }
+  else if (p2.length && p1 === p2)  { err.classList.remove('show'); inp.classList.remove('error'); inp.classList.add('valid'); }
+  else                              { err.classList.remove('show'); inp.classList.remove('error', 'valid'); }
+}
+
+function validateEmailField() {
+  const v  = document.getElementById('regEmail').value;
+  const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  document.getElementById('regEmail').classList.toggle('valid', ok && v.length > 0);
+}
+
+function clearLoginAlert() { document.getElementById('loginAlert').classList.remove('show'); }
+
+function showErr(id, errId) { document.getElementById(id).classList.add('error'); document.getElementById(errId).classList.add('show'); }
+function clearErr(id, errId) { document.getElementById(id).classList.remove('error'); document.getElementById(errId).classList.remove('show'); }
+
+function selectOrgType(el) {
+  document.querySelectorAll('.org-type-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('orgTypeErr').classList.remove('show');
+}
+
+function loginAsOrg() {
+  document.getElementById('loginEmail').value = 'contato@djprod.com';
+  document.getElementById('loginPwd').value   = '123456';
+  clearLoginAlert();
+}
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pwd   = document.getElementById('loginPwd').value;
+  let ok = true;
+
+  clearErr('loginEmail', 'loginEmailErr');
+  clearErr('loginPwd',   'loginPwdErr');
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showErr('loginEmail', 'loginEmailErr'); ok = false; }
+  if (!pwd) { showErr('loginPwd', 'loginPwdErr'); ok = false; }
+  if (!ok) return;
+
+  const btn = document.getElementById('loginBtn');
+  btn.classList.add('loading');
+
+  try {
+    const response = await fetch('http://127.0.0.1:8000/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, senha: pwd })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      if (data.tipo && data.tipo !== 'organizador') {
+        document.getElementById('loginAlertMsg').textContent =
+          'Esta conta não é de um organizador. Use o login de clientes.';
+        document.getElementById('loginAlert').classList.add('show');
+        return;
+      }
+      localStorage.setItem('orgLogado', data.nome);
+      localStorage.setItem('orgId', data.id_usuario);
+      localStorage.setItem('orgTipo', data.tipo || 'organizador');
+      window.location.href = 'painel-organizador.html';
+    } else {
+      document.getElementById('loginAlertMsg').textContent = data.detail || 'Erro ao fazer login.';
+      document.getElementById('loginAlert').classList.add('show');
+    }
+
+  } catch (_) {
+    const org = ORGS_DB[email];
+    if (org && org.senha === pwd) {
+      document.getElementById('loginAlert').classList.remove('show');
+      localStorage.setItem('orgLogado', org.nome);
+      localStorage.setItem('orgId', '44455566-7770-0000-0000-000000000001');
+      localStorage.setItem('orgTipo', 'organizador');
+      window.location.href = 'painel-organizador.html';
+    } else {
+      document.getElementById('loginAlertMsg').textContent =
+        'E-mail ou senha incorretos, ou esta conta não é de um organizador.';
+      document.getElementById('loginAlert').classList.add('show');
+    }
+
+  } finally {
+    btn.classList.remove('loading');
+  }
+}
+
+async function doRegister() {
+  const orgType    = document.querySelector('.org-type-option.selected');
+  const nome       = document.getElementById('regNome').value.trim();
+  const responsavel= document.getElementById('regResponsavel').value.trim();
+  const email      = document.getElementById('regEmail').value.trim();
+  const cpf        = document.getElementById('regCpf').value.replace(/\D/g, '');
+  const pwd        = document.getElementById('regPwd').value;
+  const pwd2       = document.getElementById('regPwdConfirm').value;
+  const terms      = document.getElementById('termsCheck').checked;
+  let ok = true;
+
+  clearErr('regNome',       'regNomeErr');
+  clearErr('regResponsavel','regResponsavelErr');
+  clearErr('regEmail',      'regEmailErr');
+  clearErr('regCpf',        'regCpfErr');
+  clearErr('regPwd',        'regPwdErr');
+  clearErr('regPwdConfirm', 'regPwdConfirmErr');
+  document.getElementById('registerAlert').classList.remove('show');
+  document.getElementById('orgTypeErr').classList.remove('show');
+
+  if (!orgType)                                                 { document.getElementById('orgTypeErr').classList.add('show'); ok = false; }
+  if (nome.length < 3)                                          { showErr('regNome',        'regNomeErr'); ok = false; }
+  if (responsavel.split(' ').length < 2)                        { showErr('regResponsavel', 'regResponsavelErr'); ok = false; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))               { showErr('regEmail',       'regEmailErr'); ok = false; }
+  if (cpf.length !== 11)                                        { showErr('regCpf',         'regCpfErr'); ok = false; }
+  if (pwd.length < 6 || !/[a-zA-Z]/.test(pwd) || !/\d/.test(pwd)) { showErr('regPwd',    'regPwdErr'); ok = false; }
+  if (pwd !== pwd2)                                             { showErr('regPwdConfirm', 'regPwdConfirmErr'); ok = false; }
+  if (!terms) {
+    document.getElementById('registerAlertMsg').textContent = 'Aceite os Termos para Organizadores para continuar.';
+    document.getElementById('registerAlert').style.display  = 'flex';
+    document.getElementById('registerAlert').classList.add('show');
+    ok = false;
+  }
+  if (!ok) return;
+
+  const btn = document.getElementById('registerBtn');
+  btn.classList.add('loading');
+
+  const payload = {
+    nome:  responsavel,
+    email: email,
+    cpf:   cpf,
+    senha: pwd,
+    tipo:  'organizador',
+    nome_organizacao: nome,
+    tipo_organizacao: orgType ? orgType.dataset.type : 'outro'
+  };
+
+  try {
+    const response = await fetch('http://127.0.0.1:8000/api/registro/organizador', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      document.getElementById('registerForm').style.display = 'none';
+      document.getElementById('successEmail').textContent   = email;
+      document.getElementById('successBox').classList.add('show');
+    } else {
+      document.getElementById('registerAlertMsg').textContent = data.detail || 'Erro ao criar conta.';
+      document.getElementById('registerAlert').style.display  = 'flex';
+      document.getElementById('registerAlert').classList.add('show');
+    }
+
+  } catch (_) {
+    document.getElementById('registerForm').style.display = 'none';
+    document.getElementById('successEmail').textContent   = email;
+    document.getElementById('successBox').classList.add('show');
+
+  } finally {
+    btn.classList.remove('loading');
+  }
+}
+
+function doForgot() {
+  const email = document.getElementById('forgotEmail').value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    document.getElementById('forgotEmail').classList.add('error');
+    return;
+  }
+  const btn = document.querySelector('#forgotForm .btn-submit');
+  btn.classList.add('loading');
+  setTimeout(() => {
+    btn.classList.remove('loading');
+    alert('📧 Se esse e-mail estiver cadastrado como organizador, você receberá o link em instantes.');
+    switchTab('login');
+  }, 1200);
+}
+</script>
+</body>
+</html>

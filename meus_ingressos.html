@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Happy Hour — Meus Ingressos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="global.css">
+<style>
+  .page-inner { max-width: 1100px; margin: 0 auto; padding: 3rem 2rem 5rem; }
+
+  .page-hero { margin-bottom: 2.5rem; animation: fadeUp 0.5s ease both; }
+  .page-hero h1 { font-family: var(--font-display); font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; color: var(--ink); margin-bottom: 0.375rem; }
+  .page-hero p { font-size: 0.9375rem; color: var(--ink-3); }
+
+  .filter-bar { display: flex; gap: 0.625rem; margin-bottom: 2rem; flex-wrap: wrap; animation: fadeUp 0.5s 0.05s ease both; }
+
+  .tickets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem; }
+
+  .ticket-item { background: var(--white); border-radius: var(--r-xl); border: 1px solid var(--paper-3); overflow: hidden; transition: transform 0.25s, box-shadow 0.25s; animation: fadeUp 0.5s ease both; }
+  .ticket-item:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(26,20,16,0.10); }
+
+  .ticket-item-banner { height: 110px; position: relative; display: flex; align-items: center; justify-content: center; }
+  .ticket-item-banner-text { font-family: var(--font-display); font-size: 2.75rem; font-weight: 800; color: rgba(255,255,255,0.10); letter-spacing: -0.05em; user-select: none; }
+
+  .status-badge { position: absolute; top: 0.875rem; right: 0.875rem; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.3rem 0.75rem; border-radius: 99px; }
+  .status-ativo     { background: rgba(29,158,117,0.9); color: var(--white); }
+  .status-utilizado { background: rgba(130,118,112,0.85); color: var(--white); }
+  .status-cancelado { background: rgba(226,75,74,0.85); color: var(--white); }
+
+  .ticket-item-body { padding: 1.25rem 1.5rem; }
+  .ticket-item-title { font-family: var(--font-display); font-size: 1.0625rem; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); margin-bottom: 0.25rem; line-height: 1.25; }
+  .ticket-item-meta { font-size: 0.8125rem; color: var(--ink-3); line-height: 1.7; margin-bottom: 1.125rem; }
+
+  .ticket-item-divider { border: none; border-top: 1.5px dashed var(--paper-3); margin-bottom: 1.125rem; position: relative; }
+  .ticket-item-divider::before, .ticket-item-divider::after { content: ''; position: absolute; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; background: var(--paper); border-radius: 50%; }
+  .ticket-item-divider::before { left: -24px; }
+  .ticket-item-divider::after  { right: -24px; }
+
+  .ticket-item-footer { display: flex; align-items: center; justify-content: space-between; }
+  .ticket-item-info .lote-tag { font-size: 0.75rem; color: var(--brand); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+  .ticket-item-info .price-tag { font-family: var(--font-display); font-size: 1.25rem; font-weight: 800; color: var(--ink); letter-spacing: -0.03em; line-height: 1; }
+
+  .qr-mini { width: 56px; height: 56px; background: var(--ink); border-radius: var(--r-sm); display: grid; gap: 2px; padding: 5px; cursor: pointer; transition: transform 0.2s; }
+  .qr-mini:hover { transform: scale(1.08); }
+  .qr-mini div { border-radius: 1px; }
+
+  .ticket-item-actions { display: flex; gap: 0.625rem; padding: 0 1.5rem 1.25rem; }
+  .btn-action { flex: 1; font-family: var(--font-body); font-size: 0.8125rem; font-weight: 600; border: 1.5px solid var(--paper-3); background: none; color: var(--ink-2); border-radius: 99px; padding: 0.5rem; cursor: pointer; transition: border-color 0.2s, background 0.2s, color 0.2s; }
+  .btn-action:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-light); }
+  .btn-action.danger:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-bg); }
+  .btn-action:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .empty-state { text-align: center; padding: 5rem 2rem; animation: fadeUp 0.5s ease both; }
+  .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+  .empty-state h3 { font-family: var(--font-display); font-size: 1.375rem; font-weight: 700; color: var(--ink); margin-bottom: 0.5rem; }
+  .empty-state p { font-size: 0.9375rem; color: var(--ink-3); margin-bottom: 1.75rem; }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(26,20,16,0.7); backdrop-filter: blur(4px); z-index: 200; align-items: center; justify-content: center; padding: 1rem; }
+  .modal-overlay.open { display: flex; }
+  .modal-qr { background: var(--white); border-radius: var(--r-xl); max-width: 400px; width: 100%; animation: slideUp 0.3s cubic-bezier(0.16,1,0.3,1); }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: none; } }
+  .modal-qr-header { padding: 1.5rem 2rem 0; display: flex; align-items: center; justify-content: space-between; }
+  .modal-qr-header h3 { font-family: var(--font-display); font-size: 1.125rem; font-weight: 700; color: var(--ink); }
+  .modal-qr-close { background: var(--paper-2); border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: 1rem; color: var(--ink-3); display: flex; align-items: center; justify-content: center; }
+  .modal-qr-body { padding: 1.5rem 2rem 2rem; text-align: center; }
+  .modal-qr-code { width: 200px; height: 200px; background: var(--ink); border-radius: var(--r-md); display: grid; margin: 0 auto 1rem; gap: 3px; padding: 12px; }
+  .modal-qr-code div { border-radius: 1px; }
+  .modal-qr-ticket { font-family: monospace; font-size: 0.8125rem; color: var(--ink-3); letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+  .modal-qr-event { font-size: 0.875rem; color: var(--ink-2); }
+
+  .auth-wall { text-align: center; padding: 5rem 2rem; }
+  .auth-wall h2 { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; color: var(--ink); margin-bottom: 0.5rem; }
+  .auth-wall p { color: var(--ink-3); margin-bottom: 1.75rem; }
+
+  @media (max-width: 768px) {
+    .tickets-grid { grid-template-columns: 1fr; }
+    .page-inner { padding: 2rem 1rem 4rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">Happy<span>Hour</span></a>
+  <ul class="nav-links">
+    <li><a href="login-organizador.html">Para Organizadores</a></li>
+  </ul>
+  <div class="nav-cta" id="navCta">
+    <a href="login.html" class="btn-ghost" style="text-decoration:none;">Entrar</a>
+    <a href="login.html" class="btn-primary" style="text-decoration:none;">Cadastrar</a>
+  </div>
+</nav>
+
+<div class="page-inner" id="mainContent">
+
+  <div id="authWall" class="auth-wall" style="display:none;">
+    <div style="font-size:3rem;margin-bottom:1rem;">🎟</div>
+    <h2>Faça login para ver seus ingressos</h2>
+    <p>Você precisa estar logado para acessar seus ingressos.</p>
+    <a href="login.html" class="btn-primary btn-lg" style="text-decoration:none;display:inline-block;">Entrar na conta</a>
+  </div>
+
+  <div id="loggedContent" style="display:none;">
+    <div class="page-hero">
+      <h1>Meus Ingressos</h1>
+      <p id="subtitleCount">Carregando seus ingressos…</p>
+    </div>
+
+    <div class="filter-bar">
+      <button class="filter-chip active" data-status="todos" onclick="setFilter('todos', this)">🎵 Todos</button>
+      <button class="filter-chip" data-status="ativo"     onclick="setFilter('ativo', this)">✅ Ativos</button>
+      <button class="filter-chip" data-status="utilizado" onclick="setFilter('utilizado', this)">✔ Utilizados</button>
+      <button class="filter-chip" data-status="cancelado" onclick="setFilter('cancelado', this)">✕ Cancelados</button>
+    </div>
+
+    <div class="tickets-grid" id="ticketsGrid"></div>
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="qrModal" onclick="closeQR(event)">
+  <div class="modal-qr">
+    <div class="modal-qr-header">
+      <h3 id="qrModalTitle">QR Code do Ingresso</h3>
+      <button class="modal-qr-close" onclick="document.getElementById('qrModal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-qr-body">
+      <div class="modal-qr-code" id="qrModalCode"></div>
+      <div class="modal-qr-ticket" id="qrModalTicket">QR-ROCK-001-XXXXXX</div>
+      <div class="modal-qr-event" id="qrModalEvent">Rock in Rio de Janeiro 2026</div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="cancelModal" onclick="closeCancelModal(event)">
+  <div class="modal-qr">
+    <div class="modal-qr-header">
+      <h3>Cancelar ingresso</h3>
+      <button class="modal-qr-close" onclick="document.getElementById('cancelModal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-qr-body">
+      <div style="font-size:2rem;margin-bottom:1rem;">⚠️</div>
+      <p style="font-size:0.9375rem;color:var(--ink-2);margin-bottom:0.5rem;">Tem certeza que deseja cancelar este ingresso?</p>
+      <p style="font-size:0.8125rem;color:var(--ink-3);margin-bottom:1.75rem;">O reembolso está disponível apenas até 48h antes do início do evento.</p>
+      <div style="display:flex;gap:0.75rem;">
+        <button onclick="document.getElementById('cancelModal').classList.remove('open')" style="flex:1;font-family:var(--font-body);font-size:0.9rem;font-weight:500;border:1.5px solid var(--paper-3);background:none;color:var(--ink-2);border-radius:var(--r-md);padding:0.75rem;cursor:pointer;">Voltar</button>
+        <button id="confirmCancelBtn" onclick="doCancel()" style="flex:1;font-family:var(--font-body);font-size:0.9rem;font-weight:600;border:none;background:var(--danger);color:var(--white);border-radius:var(--r-md);padding:0.75rem;cursor:pointer;">Cancelar ingresso</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <div class="toast-icon">✓</div>
+  <span id="toastMsg">Ação realizada!</span>
+</div>
+
+<footer>
+  <span class="footer-logo">HappyHour</span>
+  <p>© 2026 Happy Hour — Escola de Informática Aplicada, UNIRIO</p>
+  <p style="margin-top:0.5rem;">Desenvolvido por Thiago Porto Scarano &amp; Felipe Fionda</p>
+</footer>
+
+<script>
+const API_BASE = 'http://127.0.0.1:8000/api';
+
+let allTickets = [];
+let currentFilter = 'todos';
+let cancelTarget = null;
+
+function init() {
+  const usuarioId = localStorage.getItem('usuarioId');
+  const nome = localStorage.getItem('usuarioLogado');
+  
+  if (!usuarioId && !nome) {
+    document.getElementById('authWall').style.display = 'block';
+    return;
+  }
+
+  const pN = nome ? nome.split(' ')[0] : 'Cliente';
+  document.getElementById('navCta').innerHTML = `
+    <a href="meus_ingressos.html" class="btn-ghost" style="text-decoration:none;color:var(--brand);">Meus Ingressos</a>
+    <span style="font-weight:600;color:var(--ink);">👋 ${pN}</span>
+    <button onclick="fazerLogout()" class="btn-outline" style="padding:0.4rem 1rem;border-radius:var(--r-sm);">Sair</button>`;
+
+  document.getElementById('loggedContent').style.display = 'block';
+  carregarTickets();
+}
+
+function fazerLogout() { 
+  localStorage.removeItem('usuarioLogado');
+  localStorage.removeItem('usuarioId');
+  window.location.href = 'index.html'; 
+}
+
+async function carregarTickets() {
+  try {
+    const usuarioId = localStorage.getItem('usuarioId');
+    
+    if (!usuarioId) {
+      throw new Error('Usuário não identificado');
+    }
+    
+    const response = await fetch(`${API_BASE}/tickets/${usuarioId}`);
+    
+    if (response.ok) {
+      allTickets = await response.json();
+    } else {
+      throw new Error('API retornou erro');
+    }
+  } catch (error) {
+    console.error('Erro ao carregar tickets:', error);
+    allTickets = DEMO_TICKETS;
+    showToast('⚠️ Modo offline - usando dados de demonstração');
+  }
+  
+  renderTickets();
+}
+
+function setFilter(status, btn) {
+  currentFilter = status;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  renderTickets();
+}
+
+function renderTickets() {
+  const list = currentFilter === 'todos'
+    ? allTickets
+    : allTickets.filter(t => t.status === currentFilter);
+
+  const count = allTickets.length;
+  document.getElementById('subtitleCount').textContent =
+    count === 0 ? 'Nenhum ingresso encontrado.'
+    : count === 1 ? '1 ingresso na sua conta.'
+    : `${count} ingressos na sua conta.`;
+
+  const grid = document.getElementById('ticketsGrid');
+  if (!list.length) {
+    grid.innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1;">
+        <div class="empty-icon">🎟</div>
+        <h3>Nenhum ingresso ${currentFilter !== 'todos' ? currentFilter : 'encontrado'}</h3>
+        <p>${currentFilter === 'todos' ? 'Você ainda não comprou nenhum ingresso.' : 'Nenhum ingresso com esse status.'}</p>
+        <a href="index.html" class="btn-primary btn-lg" style="text-decoration:none;display:inline-block;">Explorar eventos</a>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map((t, idx) => {
+    const dataCompra = t.data_compra ? new Date(t.data_compra).toLocaleDateString('pt-BR') : 'Data desconhecida';
+    const categoria = getCategoriaPorTitulo(t.titulo_evento);
+    const bannerText = categoria.toUpperCase().slice(0, 4);
+    const bannerClass = `banner-${categoria}`;
+    const preco = t.valor_pago || 100;
+    
+    return `
+      <div class="ticket-item" style="animation-delay:${idx * 0.06}s;">
+        <div class="ticket-item-banner ${bannerClass}">
+          <div class="ticket-item-banner-text">${bannerText}</div>
+          <span class="status-badge status-${t.status}">${labelStatus(t.status)}</span>
+        </div>
+        <div class="ticket-item-body">
+          <div class="ticket-item-title">${t.titulo_evento || 'Evento'}</div>
+          <div class="ticket-item-meta">
+            🗓 Comprado em ${dataCompra}<br>
+            🎟 Código: ${t.codigo_qr || t.id_ticket?.slice(0, 12) || 'N/A'}
+          </div>
+          <hr class="ticket-item-divider">
+          <div class="ticket-item-footer">
+            <div class="ticket-item-info">
+              <div class="lote-tag">Ingresso Digital</div>
+              <div class="price-tag">R$&nbsp;${preco.toFixed(2).replace('.', ',')}</div>
+            </div>
+            <div class="qr-mini" id="qr-${t.id_ticket}" onclick="openQR('${t.id_ticket}', '${t.titulo_evento}')" title="Ver QR Code"></div>
+          </div>
+        </div>
+        <div class="ticket-item-actions">
+          <button class="btn-action" onclick="downloadTicket('${t.id_ticket}', '${t.codigo_qr}')">⬇ Baixar</button>
+          <button class="btn-action danger" onclick="openCancel('${t.id_ticket}')" ${t.status !== 'ativo' ? 'disabled' : ''}>✕ Cancelar</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  allTickets.forEach(t => buildMiniQR('qr-' + t.id_ticket, t.status !== 'ativo'));
+}
+
+function getCategoriaPorTitulo(titulo) {
+  if (!titulo) return 'rock';
+  const tituloLower = titulo.toLowerCase();
+  if (tituloLower.includes('rock')) return 'rock';
+  if (tituloLower.includes('samba')) return 'samba';
+  if (tituloLower.includes('jazz')) return 'jazz';
+  if (tituloLower.includes('pop')) return 'pop';
+  if (tituloLower.includes('indie') || tituloLower.includes('feira')) return 'indie';
+  return 'rock';
+}
+
+function labelStatus(s) {
+  const statusMap = {
+    'ativo': 'Ativo',
+    'utilizado': 'Utilizado', 
+    'cancelado': 'Cancelado',
+    'rascunho': 'Rascunho',
+    'expirado': 'Expirado'
+  };
+  return statusMap[s] || s;
+}
+
+function buildMiniQR(id, faded) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = '';
+  const cols = 7;
+  el.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+  for (let i = 0; i < cols * cols; i++) {
+    const d = document.createElement('div');
+    d.style.background = Math.random() > 0.45 ? (faded ? 'rgba(0,0,0,0.3)' : 'var(--ink)') : 'var(--white)';
+    d.style.borderRadius = '1px';
+    el.appendChild(d);
+  }
+  if (faded) el.style.opacity = '0.4';
+}
+
+function openQR(id, title) {
+  const t = allTickets.find(x => x.id_ticket === id);
+  if (!t || t.status !== 'ativo') {
+    showToast('Este ingresso não está ativo para exibição');
+    return;
+  }
+  document.getElementById('qrModalTitle').textContent = 'Seu ingresso';
+  document.getElementById('qrModalTicket').textContent = t.codigo_qr || id.slice(0, 16);
+  document.getElementById('qrModalEvent').textContent = title || 'Evento';
+  const qrEl = document.getElementById('qrModalCode');
+  qrEl.innerHTML = '';
+  const cols = 12;
+  qrEl.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+  for (let i = 0; i < cols * cols; i++) {
+    const d = document.createElement('div');
+    d.style.background = Math.random() > 0.45 ? 'var(--ink)' : 'var(--white)';
+    d.style.borderRadius = '1px';
+    qrEl.appendChild(d);
+  }
+  document.getElementById('qrModal').classList.add('open');
+}
+
+function closeQR(e) {
+  if (e.target === document.getElementById('qrModal')) document.getElementById('qrModal').classList.remove('open');
+}
+
+function openCancel(id) {
+  cancelTarget = id;
+  document.getElementById('cancelModal').classList.add('open');
+}
+
+function closeCancelModal(e) {
+  if (e.target === document.getElementById('cancelModal')) document.getElementById('cancelModal').classList.remove('open');
+}
+
+async function doCancel() {
+  if (!cancelTarget) return;
+  
+  const ticket = allTickets.find(x => x.id_ticket === cancelTarget);
+  if (!ticket) return;
+  
+  try {
+    const usuarioId = localStorage.getItem('usuarioId');
+    const url = `${API_BASE}/tickets/${cancelTarget}/cancelar?id_cliente=${usuarioId}&id_evento=${ticket.id_evento}&codigo_qr=${encodeURIComponent(ticket.codigo_qr)}&data_compra=${encodeURIComponent(ticket.data_compra)}`;
+    
+    const response = await fetch(url, { method: 'PATCH' });
+    
+    if (response.ok) {
+      ticket.status = 'cancelado';
+      showToast('Ingresso cancelado com sucesso!');
+    } else {
+      throw new Error('Erro no cancelamento');
+    }
+  } catch (error) {
+    ticket.status = 'cancelado';
+    showToast('Ingresso cancelado (modo offline)');
+  }
+  
+  document.getElementById('cancelModal').classList.remove('open');
+  renderTickets();
+  cancelTarget = null;
+}
+
+function downloadTicket(ticketId, codigoQr) {
+  showToast(`📧 Ingresso ${codigoQr || ticketId} enviado para o seu e-mail!`);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+const DEMO_TICKETS = [
+  {
+    id_ticket: "ticket-001",
+    id_evento: "1",
+    codigo_qr: "QR-ROCK2026-ANA-001",
+    status: "ativo",
+    data_compra: "2026-05-01T10:00:00",
+    titulo_evento: "Rock in Rio de Janeiro 2026",
+    valor_pago: 150.00
+  },
+  {
+    id_ticket: "ticket-002",
+    id_evento: "1",
+    codigo_qr: "QR-ROCK2026-BRUNO-002",
+    status: "utilizado",
+    data_compra: "2026-04-20T16:45:00",
+    titulo_evento: "Rock in Rio de Janeiro 2026",
+    valor_pago: 150.00
+  },
+  {
+    id_ticket: "ticket-003",
+    id_evento: "2",
+    codigo_qr: "QR-SAMBA2026-CARLA-003",
+    status: "ativo",
+    data_compra: "2026-05-02T09:30:00",
+    titulo_evento: "Noite do Samba — Edição Especial",
+    valor_pago: 80.00
+  }
+];
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

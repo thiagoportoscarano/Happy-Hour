@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Happy Hour — Ingressos para Eventos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="global.css">
+</head>
+<body>
+
+<nav>
+  <a href="#" class="nav-logo">Happy<span>Hour</span></a>
+  <ul class="nav-links">
+    <li><a href="login-organizador.html">Para Organizadores</a></li>
+  </ul>
+  <div class="nav-cta">
+    <a href="login.html" class="btn-ghost" style="text-decoration: none;">Entrar</a>
+    <a href="login.html" class="btn-primary" style="text-decoration: none;">Cadastrar</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-tag">Rio de Janeiro, RJ</div>
+    <h1>Sua noite<em>começa aqui.</em></h1>
+    <p>Ingressos digitais para shows, concertos e festivais cariocas. Compre em segundos, entre com QR Code.</p>
+    <div class="hero-actions">
+      <button class="btn-primary btn-lg" onclick="document.querySelector('.events-section').scrollIntoView({behavior:'smooth'})">Explorar eventos</button>
+      <button class="btn-outline" onclick="document.querySelector('.how-section').scrollIntoView({behavior:'smooth'})" style="font-size:1rem; border-radius:var(--r-md);">Como funciona</button>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <div class="stat-num">5k+</div>
+        <div class="stat-label">Eventos ativos</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">140k</div>
+        <div class="stat-label">Ingressos vendidos</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">98%</div>
+        <div class="stat-label">Satisfação</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-visual">
+    <div class="ticket-card" onclick="openModal(events[0])">
+      <div class="ticket-img banner-rock">
+        <div class="ticket-img-pattern"></div>
+        <div class="ticket-img-text">ROCK</div>
+        <div class="ticket-genre-tag">Rock · Festival</div>
+      </div>
+      <div class="ticket-body">
+        <h3>Rock in Rio de Janeiro 2026</h3>
+        <div class="ticket-meta">
+          <span>📅 15 Set 2026</span>
+          <span>📍 Barra da Tijuca</span>
+        </div>
+        <hr class="ticket-divider">
+        <div class="ticket-footer">
+          <div class="ticket-price">
+            R$&nbsp;150
+            <small>por ingresso</small>
+          </div>
+          <div class="qr-placeholder" id="hero-qr">
+            <div></div><div></div><div></div><div></div><div></div>
+            <div></div><div></div><div></div><div></div><div></div>
+            <div></div><div></div><div></div><div></div><div></div>
+            <div></div><div></div><div></div><div></div><div></div>
+            <div></div><div></div><div></div><div></div><div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="floating-badge badge-1">
+      <div class="badge-dot"></div>
+      <span>4.800 ingressos disponíveis</span>
+    </div>
+  </div>
+</section>
+
+<div class="search-section">
+  <div class="search-inner">
+    <div class="search-box">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" placeholder="Buscar eventos, artistas ou locais…" id="searchInput" oninput="filterEvents()">
+    </div>
+    <button class="filter-chip active" data-cat="todos" onclick="setCategory('todos',this)">🎵 Todos</button>
+    <button class="filter-chip" data-cat="rock" onclick="setCategory('rock',this)">🎸 Rock</button>
+    <button class="filter-chip" data-cat="samba" onclick="setCategory('samba',this)">🥁 Samba</button>
+    <button class="filter-chip" data-cat="jazz" onclick="setCategory('jazz',this)">🎷 Jazz</button>
+    <button class="filter-chip" data-cat="pop" onclick="setCategory('pop',this)">🎤 Pop</button>
+    <button class="filter-chip" data-cat="indie" onclick="setCategory('indie',this)">🎻 Indie</button>
+  </div>
+</div>
+
+<section class="events-section">
+  <div class="section-header">
+    <h2>Próximos eventos</h2>
+    <a href="#">Ver todos →</a>
+  </div>
+  <div class="events-grid" id="eventsGrid"></div>
+</section>
+
+<section class="how-section">
+  <div class="how-inner">
+    <div class="section-header">
+      <h2>Como funciona</h2>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">01</div>
+        <div class="step-icon">🔍</div>
+        <div class="step-title">Explore eventos</div>
+        <div class="step-desc">Navegue pela programação cultural do Rio. Filtre por categoria, data ou local.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">02</div>
+        <div class="step-icon">🛒</div>
+        <div class="step-title">Compre em segundos</div>
+        <div class="step-desc">Pagamento via Pix, cartão ou boleto. O fluxo completo em até 4 telas.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">03</div>
+        <div class="step-icon">📱</div>
+        <div class="step-title">Receba o QR Code</div>
+        <div class="step-desc">Seu ingresso digital chega por e-mail imediatamente após a confirmação.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">04</div>
+        <div class="step-icon">✅</div>
+        <div class="step-title">Entrada liberada</div>
+        <div class="step-desc">Na porta, o validador escaneia seu QR Code. Rápido, seguro e sem filas.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal" id="modal">
+    <div class="modal-banner" id="modalBanner">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="banner-text" id="modalBannerText"></div>
+    </div>
+    <div class="modal-body">
+      <h2 id="modalTitle"></h2>
+      <div class="modal-meta" id="modalMeta"></div>
+
+      <div style="font-size:0.8125rem; font-weight:600; color:var(--ink-2); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.875rem;">Selecione o lote</div>
+      <div id="lotesContainer"></div>
+
+      <div style="font-size:0.8125rem; font-weight:600; color:var(--ink-2); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.75rem;">Quantidade</div>
+      <div class="qty-control">
+        <button class="qty-btn" onclick="changeQty(-1)">−</button>
+        <span class="qty-num" id="qtyDisplay">1</span>
+        <button class="qty-btn" onclick="changeQty(1)">+</button>
+      </div>
+
+      <div class="modal-total">
+        <span class="total-label">Total a pagar</span>
+        <span class="total-value" id="totalDisplay">R$ 0</span>
+      </div>
+
+      <button class="btn-confirm" onclick="confirmPurchase()">Continuar para pagamento →</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <div class="toast-icon">✓</div>
+  <span id="toastMsg">Ingresso adicionado!</span>
+</div>
+
+<footer>
+  <span class="footer-logo">HappyHour</span>
+  <p>© 2026 Happy Hour — Escola de Informática Aplicada, UNIRIO</p>
+  <p style="margin-top:0.5rem;">Desenvolvido por Thiago Porto Scarano &amp; Felipe Fionda</p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
