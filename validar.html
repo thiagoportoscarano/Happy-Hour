@@ -330,20 +330,9 @@
 </div>
 
 <script>
-let eventosConhecidos = [
-  { id_evento: "10000000-0000-0000-0000-000000000001", titulo: "Rock in Rio de Janeiro 2026", codigos: ["QR-ROCK2026-ANA-001", "QR-ROCK2026-BRUNO-002"] },
-  { id_evento: "20000000-0000-0000-0000-000000000001", titulo: "Noite do Samba — Edição Especial", codigos: ["QR-SAMBA2026-CARLA-003", "QR-SAMBA2026-ANA-004"] },
-  { id_evento: "30000000-0000-0000-0000-000000000001", titulo: "Festival de Jazz na Praia", codigos: ["QR-JAZZ-DAN-005", "QR-JAZZ-ELENA-006"] }
-];
+const API_BASE = 'http://127.0.0.1:8000/api';
 
-let ticketsMock = [
-  { codigo_qr: "QR-ROCK2026-ANA-001", status: "ativo", nome_cliente: "Ana Paula Lima", id_evento: "10000000-0000-0000-0000-000000000001", titulo_evento: "Rock in Rio de Janeiro 2026" },
-  { codigo_qr: "QR-ROCK2026-BRUNO-002", status: "utilizado", nome_cliente: "Bruno Carvalho", id_evento: "10000000-0000-0000-0000-000000000001", titulo_evento: "Rock in Rio de Janeiro 2026" },
-  { codigo_qr: "QR-SAMBA2026-CARLA-003", status: "ativo", nome_cliente: "Carla Mendes", id_evento: "20000000-0000-0000-0000-000000000001", titulo_evento: "Noite do Samba — Edição Especial" },
-  { codigo_qr: "QR-SAMBA2026-ANA-004", status: "cancelado", nome_cliente: "Ana Paula Lima", id_evento: "20000000-0000-0000-0000-000000000001", titulo_evento: "Noite do Samba — Edição Especial" },
-  { codigo_qr: "QR-JAZZ-DAN-005", status: "ativo", nome_cliente: "Daniel Oliveira", id_evento: "30000000-0000-0000-0000-000000000001", titulo_evento: "Festival de Jazz na Praia" },
-  { codigo_qr: "QR-JAZZ-ELENA-006", status: "ativo", nome_cliente: "Elena Souza", id_evento: "30000000-0000-0000-0000-000000000001", titulo_evento: "Festival de Jazz na Praia" }
-];
+let eventoSelecionadoId = null;
 
 function init() {
   const nome = localStorage.getItem('usuarioLogado');
@@ -359,6 +348,8 @@ function init() {
     localStorage.setItem('usuarioLogado', 'Lucas Oliveira');
     document.getElementById('validadorNome').textContent = 'Lucas Oliveira';
   }
+  
+  eventoSelecionadoId = localStorage.getItem('eventoValidador') || '1';
 }
 
 function fazerLogout() {
@@ -389,10 +380,20 @@ async function validarTicket() {
   btn.classList.add('loading');
   btn.disabled = true;
 
-  const resultado = ticketsMock.find(t => t.codigo_qr === codigo);
-  const evento = eventosConhecidos.find(e => e.codigos.includes(codigo));
+  const payload = {
+    id_evento: eventoSelecionadoId,
+    codigo_qr: codigo
+  };
 
-  setTimeout(() => {
+  try {
+    const response = await fetch(`${API_BASE}/checkin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const resultado = await response.json();
+
     btn.classList.remove('loading');
     btn.disabled = false;
 
@@ -405,34 +406,70 @@ async function validarTicket() {
     const detailCliente = document.getElementById('detailCliente');
     const detailEvento = document.getElementById('detailEvento');
 
+    if (resultado.autorizado) {
+      resultIcon.className = 'result-icon success';
+      resultIcon.innerHTML = '✅';
+      resultTitle.textContent = 'ENTRADA AUTORIZADA';
+      resultMessage.textContent = resultado.mensagem;
+      detailQR.textContent = codigo;
+      detailCliente.textContent = resultado.nome_cliente || 'Cliente';
+      detailEvento.textContent = 'Evento ' + eventoSelecionadoId;
+      resultDetail.classList.remove('hidden');
+      resultArea.classList.remove('hidden');
+      showToast(`✅ ${resultado.mensagem}`);
+      document.getElementById('qrCodeInput').value = '';
+    } else {
+      resultIcon.className = 'result-icon error';
+      resultIcon.innerHTML = '❌';
+      resultTitle.textContent = 'ACESSO NEGADO';
+      resultMessage.textContent = resultado.mensagem;
+      detailQR.textContent = codigo;
+      detailCliente.textContent = '---';
+      detailEvento.textContent = 'Evento ' + eventoSelecionadoId;
+      resultDetail.classList.remove('hidden');
+      resultArea.classList.remove('hidden');
+      showToast(`❌ ${resultado.mensagem}`);
+    }
+  } catch (error) {
+    console.error('Erro na validação:', error);
+    
+    btn.classList.remove('loading');
+    btn.disabled = false;
+    
+    const ticketsMock = [
+      { codigo_qr: "QR-ROCK2026-ANA-001", status: "ativo", nome_cliente: "Ana Paula Lima", id_evento: "1", titulo_evento: "Rock in Rio de Janeiro 2026" },
+      { codigo_qr: "QR-ROCK2026-BRUNO-002", status: "utilizado", nome_cliente: "Bruno Carvalho", id_evento: "1", titulo_evento: "Rock in Rio de Janeiro 2026" }
+    ];
+    
+    const resultado = ticketsMock.find(t => t.codigo_qr === codigo);
+    
+    const resultArea = document.getElementById('resultArea');
+    const resultIcon = document.getElementById('resultIcon');
+    const resultTitle = document.getElementById('resultTitle');
+    const resultMessage = document.getElementById('resultMessage');
+    const resultDetail = document.getElementById('resultDetail');
+    const detailQR = document.getElementById('detailQR');
+    const detailCliente = document.getElementById('detailCliente');
+    const detailEvento = document.getElementById('detailEvento');
+
     if (!resultado) {
       resultIcon.className = 'result-icon error';
       resultIcon.innerHTML = '❌';
-      resultTitle.textContent = 'Acesso Negado';
+      resultTitle.textContent = 'ACESSO NEGADO';
       resultMessage.textContent = 'QR Code inválido ou não reconhecido.';
-      resultDetail.classList.add('hidden');
+      detailQR.textContent = codigo;
+      detailCliente.textContent = '---';
+      detailEvento.textContent = 'Evento ' + eventoSelecionadoId;
+      resultDetail.classList.remove('hidden');
       resultArea.classList.remove('hidden');
       return;
     }
 
     if (resultado.status === 'utilizado') {
       resultIcon.className = 'result-icon error';
-      resultIcon.innerHTML = '🚫';
-      resultTitle.textContent = 'Ticket já utilizado';
+      resultIcon.innerHTML = '❌';
+      resultTitle.textContent = 'ACESSO NEGADO';
       resultMessage.textContent = 'Este ingresso já foi validado anteriormente.';
-      detailQR.textContent = resultado.codigo_qr;
-      detailCliente.textContent = resultado.nome_cliente;
-      detailEvento.textContent = resultado.titulo_evento;
-      resultDetail.classList.remove('hidden');
-      resultArea.classList.remove('hidden');
-      return;
-    }
-
-    if (resultado.status === 'cancelado') {
-      resultIcon.className = 'result-icon error';
-      resultIcon.innerHTML = '⚠️';
-      resultTitle.textContent = 'Ticket cancelado';
-      resultMessage.textContent = 'Este ingresso foi cancelado e não pode ser utilizado.';
       detailQR.textContent = resultado.codigo_qr;
       detailCliente.textContent = resultado.nome_cliente;
       detailEvento.textContent = resultado.titulo_evento;
@@ -455,7 +492,7 @@ async function validarTicket() {
       showToast(`✅ Entrada liberada para ${resultado.nome_cliente}`);
       document.getElementById('qrCodeInput').value = '';
     }
-  }, 800);
+  }
 }
 
 function resetScanner() {

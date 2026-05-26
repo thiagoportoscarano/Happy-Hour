@@ -221,7 +221,7 @@
 
   <div>
     <div class="order-card">
-      <div class="order-banner banner-rock" id="orderBanner">
+      <div class="order-banner" id="orderBanner">
         <div class="order-banner-text" id="orderBannerText">ROCK</div>
       </div>
       <div class="order-body">
@@ -272,7 +272,7 @@
         Uma cópia do ingresso foi enviada para <strong id="confEmail">seu@email.com</strong>
       </div>
       <div class="conf-actions">
-        <a href="meus-ingressos.html" class="btn-primary btn-lg" style="text-decoration:none;">Ver meus ingressos</a>
+        <a href="meus_ingressos.html" class="btn-primary btn-lg" style="text-decoration:none;">Ver meus ingressos</a>
         <a href="index.html" class="btn-outline" style="text-decoration:none; font-size:1rem; border-radius:var(--r-md); padding:0.875rem 1.5rem;">Explorar mais eventos</a>
       </div>
     </div>
@@ -294,7 +294,7 @@
 const API_BASE = 'http://127.0.0.1:8000/api';
 
 const params = new URLSearchParams(window.location.search);
-const eventId = params.get('evento_id') || params.get('id') || null;
+const eventoId = params.get('evento_id') || params.get('id') || '1';
 const eventTitle = params.get('titulo') || 'Rock in Rio de Janeiro 2026';
 const eventDate = params.get('data') || '15 Set 2026';
 const eventTime = params.get('hora') || '19h00';
@@ -316,7 +316,7 @@ function init() {
   if (nome) {
     const pN = nome.split(' ')[0];
     document.getElementById('navCta').innerHTML = `
-      <a href="meus-ingressos.html" class="btn-ghost" style="text-decoration:none;">Meus Ingressos</a>
+      <a href="meus_ingressos.html" class="btn-ghost" style="text-decoration:none;">Meus Ingressos</a>
       <span style="font-weight:600;color:var(--ink);">👋 ${pN}</span>
       <button onclick="fazerLogout()" class="btn-outline" style="padding:0.4rem 1rem;border-radius:var(--r-sm);">Sair</button>`;
   }
@@ -331,8 +331,10 @@ function init() {
   document.getElementById('orderBanner').className = 'order-banner ' + eventBanner;
   document.getElementById('orderBannerText').textContent = eventText;
   document.getElementById('orderTitle').textContent = eventTitle;
-  document.getElementById('orderMeta').innerHTML =
-    `📅 ${eventDate} · ${eventTime}<br>📍 ${eventVenue}<br>🎟 ${loteName}`;
+  document.getElementById('orderMeta').innerHTML = `
+    📅 ${eventDate} · ${eventTime}<br>
+    📍 ${eventVenue}<br>
+    🎟 ${loteName}`;
   document.getElementById('orderQtyLabel').textContent = qty + (qty > 1 ? ' ingressos' : ' ingresso');
   document.getElementById('orderSubtotal').textContent = 'R$ ' + (lotePrice * qty).toFixed(2).replace('.',',');
   document.getElementById('orderTaxa').textContent = 'R$ ' + taxa.toFixed(2).replace('.',',');
@@ -346,10 +348,10 @@ function init() {
 }
 
 async function verificarVagas() {
-  if (!eventId) return;
+  if (!eventoId) return;
   
   try {
-    const response = await fetch(`${API_BASE}/vagas/${eventId}`);
+    const response = await fetch(`${API_BASE}/vagas/${eventoId}`);
     if (response.ok) {
       const data = await response.json();
       if (data.vagas_disponiveis < qty) {
@@ -441,7 +443,7 @@ async function processPayment() {
   btn.classList.add('loading');
 
   const payload = {
-    id_evento: eventId || "10000000-0000-0000-0000-000000000001",
+    id_evento: eventoId,
     id_cliente: usuarioId || "11122233-3440-0000-0000-000000000001",
     titulo_evento: eventTitle,
     data_evento: converterDataParaISO(eventDate, eventTime),

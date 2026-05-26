@@ -462,7 +462,6 @@ const ORGS_DB = {
   'contato@rockbrasil.com':   { nome: 'Rock Brasil Eventos',    senha: '123456' },
 };
 
-// ── TAB SWITCH ──
 function switchTab(tab) {
   const isLogin = tab === 'login';
   document.getElementById('tabLogin').classList.toggle('active', isLogin);
@@ -588,8 +587,9 @@ async function doLogin() {
         return;
       }
       localStorage.setItem('orgLogado', data.nome);
-      localStorage.setItem('orgTipo',   data.tipo || 'organizador');
-      window.location.href = 'index.html';
+      localStorage.setItem('orgId', data.id_usuario);
+      localStorage.setItem('orgTipo', data.tipo || 'organizador');
+      window.location.href = 'painel-organizador.html';
     } else {
       document.getElementById('loginAlertMsg').textContent = data.detail || 'Erro ao fazer login.';
       document.getElementById('loginAlert').classList.add('show');
@@ -600,8 +600,9 @@ async function doLogin() {
     if (org && org.senha === pwd) {
       document.getElementById('loginAlert').classList.remove('show');
       localStorage.setItem('orgLogado', org.nome);
-      localStorage.setItem('orgTipo',   'organizador');
-      window.location.href = 'index.html';
+      localStorage.setItem('orgId', '44455566-7770-0000-0000-000000000001');
+      localStorage.setItem('orgTipo', 'organizador');
+      window.location.href = 'painel-organizador.html';
     } else {
       document.getElementById('loginAlertMsg').textContent =
         'E-mail ou senha incorretos, ou esta conta não é de um organizador.';
@@ -652,17 +653,17 @@ async function doRegister() {
   btn.classList.add('loading');
 
   const payload = {
-    nome:  responsavel,           
+    nome:  responsavel,
     email: email,
     cpf:   cpf,
     senha: pwd,
-    tipo:  'organizador',         
-    nome_organizacao: nome,       
+    tipo:  'organizador',
+    nome_organizacao: nome,
     tipo_organizacao: orgType ? orgType.dataset.type : 'outro'
   };
 
   try {
-    const response = await fetch('http://127.0.0.1:8000/api/registro', {
+    const response = await fetch('http://127.0.0.1:8000/api/registro/organizador', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)

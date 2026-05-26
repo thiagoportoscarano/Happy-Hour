@@ -12,7 +12,7 @@ import uuid
 import logging
 from datetime import datetime, timezone
 from typing import List
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from decimal import Decimal
 
 from app.db.cassandra import get_session
@@ -25,24 +25,12 @@ router = APIRouter(prefix="/api", tags=["Tickets"])
 logger = logging.getLogger(__name__)
 
 
-# ── COMPRAR INGRESSO (UC01) ───────────────────────────────────────────────────
-
 @router.post("/tickets", response_model=TicketResponse, status_code=201)
 def comprar_ingresso(req: CompraRequest):
-    """
-    Fluxo completo de compra:
-    1. Verifica vagas disponíveis (RN003)
-    2. Gera QR Code único
-    3. Insere em tickets_por_cliente E tickets_por_evento (desnormalização)
-    4. Decrementa contador atômico de vagas
+    session = get_session()
+    id_ev_uuid = uuid.UUID(req.id_evento)
+    id_cli_uuid = uuid.UUID(req.id_cliente)
 
-    Nota: em produção o pagamento seria processado ANTES desta etapa.
-    """
-    session      = get_session()
-    id_ev_uuid   = uuid.UUID(req.id_evento)
-    id_cli_uuid  = uuid.UUID(req.id_cliente)
-
-    # ── 1. Verifica vagas (RN003)
     vagas_row = session.execute(
         "SELECT vagas_disponiveis FROM vagas_evento WHERE id_evento = %s",
         (id_ev_uuid,)
@@ -51,12 +39,10 @@ def comprar_ingresso(req: CompraRequest):
     if not vagas_row or vagas_row.vagas_disponiveis <= 0:
         raise HTTPException(status_code=409, detail="Ingressos esgotados para este evento.")
 
-    # ── 2. Gera IDs únicos
     id_ticket = uuid.uuid4()
     codigo_qr = f"QR-{req.id_evento[:8].upper()}-{str(id_ticket)[:8].upper()}"
-    agora     = datetime.now(timezone.utc)
+    agora = datetime.now(timezone.utc)
 
-    # ── 3a. Insere em tickets_por_cliente (histórico)
     session.execute(
         """
         INSERT INTO tickets_por_cliente
@@ -71,8 +57,6 @@ def comprar_ingresso(req: CompraRequest):
         ),
     )
 
-    # ── 3b. Insere em tickets_por_evento (check-in pelo validador)
-    # nome_cliente precisaria vir de uma query prévia; simplificado aqui
     session.execute(
         """
         INSERT INTO tickets_por_evento
@@ -83,12 +67,11 @@ def comprar_ingresso(req: CompraRequest):
         (id_ev_uuid, codigo_qr, id_ticket, id_cli_uuid, "Cliente", "ativo", None),
     )
 
-    # ── 4. Decrementa vagas atomicamente (COUNTER — RN003)
     session.execute(
         """
         UPDATE vagas_evento
         SET vagas_disponiveis = vagas_disponiveis - 1,
-            total_vendidos    = total_vendidos    + 1
+            total_vendidos = total_vendidos + 1
         WHERE id_evento = %s
         """,
         (id_ev_uuid,),
@@ -105,11 +88,9 @@ def comprar_ingresso(req: CompraRequest):
     )
 
 
-# ── HISTÓRICO DO CLIENTE ──────────────────────────────────────────────────────
-
 @router.get("/tickets/{id_cliente}", response_model=List[TicketResponse])
 def historico_cliente(id_cliente: str):
-    session     = get_session()
+    session = get_session()
     id_cli_uuid = uuid.UUID(id_cliente)
 
     rows = session.execute(
@@ -129,41 +110,27 @@ def historico_cliente(id_cliente: str):
     ]
 
 
-# ── CHECK-IN / VALIDAR TICKET (UC03) ─────────────────────────────────────────
-
 @router.post("/checkin", response_model=CheckinResponse)
 def validar_ticket(req: CheckinRequest):
-    """
-    Fluxo de validação na entrada do evento:
-    - Busca o ticket pela partition key (id_evento) + clustering key (codigo_qr)
-    - Se status == 'ativo': muda para 'utilizado' e libera acesso (tela verde)
-    - Se status == 'utilizado': bloqueia (RN001 — unicidade de uso)
-    - Se não encontrado: bloqueia
-    Leitura em QUORUM garante que o status é o mais recente mesmo em cluster.
-    """
-    session    = get_session()
+    session = get_session()
     id_ev_uuid = uuid.UUID(req.id_evento)
 
     row = session.execute(
-        "SELECT status_validacao, nome_cliente, id_ticket, id_cliente "
+        "SELECT status_validacao, nome_cliente, id_ticket, id_cliente, data_compra "
         "FROM tickets_por_evento "
         "WHERE id_evento = %s AND codigo_qr = %s",
         (id_ev_uuid, req.codigo_qr)
     ).one()
 
-    # Ticket não encontrado
     if not row:
-        return CheckinResponse(autorizado=False, mensagem="QR Code inválido ou não pertence a este evento.")
+        return CheckinResponse(autorizado=False, mensagem="QR Code invalido ou nao pertence a este evento.")
 
-    # Ticket já utilizado (RN001)
     if row.status_validacao == "utilizado":
-        return CheckinResponse(autorizado=False, mensagem="TICKET JÁ UTILIZADO — acesso bloqueado.")
+        return CheckinResponse(autorizado=False, mensagem="TICKET JA UTILIZADO — acesso bloqueado.")
 
-    # Ticket cancelado
     if row.status_validacao == "cancelado":
         return CheckinResponse(autorizado=False, mensagem="Ticket cancelado — acesso negado.")
 
-    # ── Ticket válido: marca como utilizado em ambas as tabelas
     agora = datetime.now(timezone.utc)
 
     session.execute(
@@ -175,14 +142,13 @@ def validar_ticket(req: CheckinRequest):
         (agora, id_ev_uuid, req.codigo_qr),
     )
 
-    # Reflete no histórico do cliente (ALLOW FILTERING — aceitável para operação pontual)
     session.execute(
         """
         UPDATE tickets_por_cliente
         SET status = 'utilizado'
-        WHERE id_cliente = %s AND id_ticket = %s
+        WHERE id_cliente = %s AND data_compra = %s AND id_ticket = %s
         """,
-        (row.id_cliente, row.id_ticket),
+        (row.id_cliente, row.data_compra, row.id_ticket),
     )
 
     logger.info(f"Check-in autorizado: {req.codigo_qr} | evento={req.id_evento}")
@@ -193,11 +159,9 @@ def validar_ticket(req: CheckinRequest):
     )
 
 
-# ── VAGAS DISPONÍVEIS (RN003) ─────────────────────────────────────────────────
-
 @router.get("/vagas/{id_evento}")
 def vagas_disponiveis(id_evento: str):
-    session    = get_session()
+    session = get_session()
     id_ev_uuid = uuid.UUID(id_evento)
 
     row = session.execute(
@@ -206,7 +170,7 @@ def vagas_disponiveis(id_evento: str):
     ).one()
 
     if not row:
-        raise HTTPException(status_code=404, detail="Evento não encontrado.")
+        raise HTTPException(status_code=404, detail="Evento nao encontrado.")
 
     return {
         "id_evento": id_evento,
@@ -215,38 +179,36 @@ def vagas_disponiveis(id_evento: str):
     }
 
 
-# ── CANCELAR INGRESSO (RN002 — até 48h antes) ────────────────────────────────
-
 @router.patch("/tickets/{id_ticket}/cancelar")
-def cancelar_ingresso(id_ticket: str, id_cliente: str, id_evento: str, codigo_qr: str, data_compra: datetime):
-    """
-    Cancela um ingresso. O frontend deve verificar a regra das 48h antes de chamar.
-    """
-    session     = get_session()
+def cancelar_ingresso(
+    id_ticket: str,
+    id_cliente: str = Query(...),
+    id_evento: str = Query(...),
+    codigo_qr: str = Query(...),
+    data_compra: datetime = Query(...)
+):
+    session = get_session()
     id_cli_uuid = uuid.UUID(id_cliente)
-    id_ev_uuid  = uuid.UUID(id_evento)
-    id_tk_uuid  = uuid.UUID(id_ticket)
+    id_ev_uuid = uuid.UUID(id_evento)
+    id_tk_uuid = uuid.UUID(id_ticket)
 
-    # Atualiza histórico do cliente
     session.execute(
         "UPDATE tickets_por_cliente SET status = 'cancelado' "
         "WHERE id_cliente = %s AND data_compra = %s AND id_ticket = %s",
         (id_cli_uuid, data_compra, id_tk_uuid),
     )
 
-    # Atualiza tabela de check-in
     session.execute(
         "UPDATE tickets_por_evento SET status_validacao = 'cancelado' "
         "WHERE id_evento = %s AND codigo_qr = %s",
         (id_ev_uuid, codigo_qr),
     )
 
-    # Devolve a vaga (COUNTER)
     session.execute(
         """
         UPDATE vagas_evento
         SET vagas_disponiveis = vagas_disponiveis + 1,
-            total_vendidos    = total_vendidos    - 1
+            total_vendidos = total_vendidos - 1
         WHERE id_evento = %s
         """,
         (id_ev_uuid,),

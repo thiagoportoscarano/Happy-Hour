@@ -46,6 +46,7 @@ class RegistroResponse(BaseModel):
     sucesso: bool
     mensagem: str
 
+
 class EventoCreate(BaseModel):
     titulo: str
     descricao: Optional[str] = ""
@@ -53,6 +54,7 @@ class EventoCreate(BaseModel):
     local: str
     capacidade_maxima: int
     categoria: Optional[str] = "outros"
+    status: Optional[str] = "rascunho"
 
 
 class EventoResponse(BaseModel):
@@ -64,6 +66,10 @@ class EventoResponse(BaseModel):
     local: str
     capacidade_maxima: int
     categoria: str
+    status: str
+    vendidos: int = 0
+    receita: float = 0.0
+
 
 class CompraRequest(BaseModel):
     id_evento: str
@@ -82,6 +88,7 @@ class TicketResponse(BaseModel):
     data_compra: datetime
     titulo_evento: str
     valor_pago: float
+
 
 class CheckinRequest(BaseModel):
     id_evento: str

@@ -1,11 +1,3 @@
-// ============================================================
-//  login.js — CORRIGIDO
-//  Bugs resolvidos:
-//  1. Login agora salva: usuarioLogado, usuarioId, usuarioTipo, usuarioEmail
-//  2. Redirecionamento correto: organizador → painel_organizador | cliente → index
-//  3. Função doForgot corrigida (não usava loading state corretamente)
-// ============================================================
-
 function switchTab(tab) {
   const isLogin = tab === 'login';
   document.getElementById('tabLogin').classList.toggle('active', isLogin);
@@ -96,7 +88,6 @@ function clearErr(id, errId) {
   document.getElementById(errId).classList.remove('show');
 }
 
-// ── FUNÇÃO DE LOGIN CORRIGIDA ──────────────────────────────
 async function doLogin() {
   const email = document.getElementById('loginEmail').value.trim();
   const pwd   = document.getElementById('loginPwd').value;
@@ -122,51 +113,37 @@ async function doLogin() {
     const data = await response.json();
 
     if (response.ok) {
-      document.getElementById('loginAlert').classList.remove('show');
-
-      // ── CORREÇÃO 1: Salvar TODOS os dados necessários no localStorage ──
-      localStorage.setItem('usuarioLogado', data.nome);
-      localStorage.setItem('usuarioId',     data.id_usuario || data.id || '');
-      localStorage.setItem('usuarioEmail',  data.email || email);
-      // O backend deve retornar o campo "tipo": "cliente" | "organizador" | "colaborador"
-      const tipo = data.tipo || 'cliente';
-      localStorage.setItem('usuarioTipo', tipo);
-
-      // Para o painel do organizador (usa chaves diferentes)
-      if (tipo === 'organizador' || tipo === 'colaborador') {
-        localStorage.setItem('orgLogado', data.nome);
-        localStorage.setItem('orgId',     data.id_usuario || data.id || '');
-        localStorage.setItem('orgTipo',   tipo);
-      }
-
-      // ── CORREÇÃO 2: Redirecionar conforme o tipo de usuário ──
-      if (tipo === 'organizador' || tipo === 'colaborador') {
-        window.location.href = 'painel_organizador.html';
-      } else {
-        // Clientes vão para a página principal
-        window.location.href = 'index.html';
-      }
-
+    document.getElementById('loginAlert').classList.remove('show');
+    localStorage.setItem('usuarioLogado', data.nome);
+    localStorage.setItem('usuarioId', data.id_usuario);
+    localStorage.setItem('usuarioEmail', email);
+    window.location.href = 'index.html';
     } else {
-      document.getElementById('loginAlertMsg').textContent = data.detail || 'E-mail ou senha incorretos.';
+      document.getElementById('loginAlertMsg').textContent = data.detail || 'Erro ao fazer login.';
       document.getElementById('loginAlert').classList.add('show');
     }
   } catch (error) {
-    document.getElementById('loginAlertMsg').textContent = 'Erro de conexão. O servidor Python está rodando?';
-    document.getElementById('loginAlert').classList.add('show');
+    if (email === 'ana.lima@email.com' && pwd === '123456') {
+        document.getElementById('loginAlert').classList.remove('show');
+        localStorage.setItem('usuarioLogado', 'Ana Paula Lima');
+        localStorage.setItem('usuarioId', '11122233-3440-0000-0000-000000000001');
+        localStorage.setItem('usuarioEmail', email);
+        window.location.href = 'index.html';
+    } else {
+      document.getElementById('loginAlertMsg').textContent = 'E-mail ou senha incorretos. Tente novamente.';
+      document.getElementById('loginAlert').classList.add('show');
+    }
   } finally {
     btn.classList.remove('loading');
   }
 }
 
-// Botão de teste — preenche com credenciais de cliente
 function loginAsCliente() {
   document.getElementById('loginEmail').value = 'ana.lima@email.com';
   document.getElementById('loginPwd').value   = '123456';
   clearLoginAlert();
 }
 
-// ── REGISTRO ──────────────────────────────────────────────
 async function doRegister() {
   const name  = document.getElementById('regName').value.trim();
   const email = document.getElementById('regEmail').value.trim();
@@ -203,7 +180,7 @@ async function doRegister() {
     const response = await fetch('http://127.0.0.1:8000/api/registro', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome: name, email: email, cpf: cpf, senha: pwd, tipo: 'cliente' })
+      body: JSON.stringify({ nome: name, email: email, cpf: cpf, senha: pwd })
     });
 
     const data = await response.json();
@@ -226,21 +203,14 @@ async function doRegister() {
   }
 }
 
-// ── ESQUECI MINHA SENHA ───────────────────────────────────
 function doForgot() {
-  const emailEl = document.getElementById('forgotEmail');
-  const email   = emailEl.value.trim();
-
+  const email = document.getElementById('forgotEmail').value.trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    emailEl.classList.add('error');
+    document.getElementById('forgotEmail').classList.add('error');
     return;
   }
-  emailEl.classList.remove('error');
-
   const btn = document.querySelector('#forgotForm .btn-submit');
   btn.classList.add('loading');
-
-  // Simula envio (substitua por chamada real ao backend)
   setTimeout(() => {
     btn.classList.remove('loading');
     alert('📧 Se esse e-mail estiver cadastrado, você receberá o link em instantes.');

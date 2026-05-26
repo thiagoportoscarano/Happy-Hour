@@ -15,7 +15,6 @@
   .nav-links a:hover { color: var(--brand); }
 
   .org-badge { display: inline-flex; align-items: center; gap: 0.375rem; background: rgba(255,186,80,0.12); border: 1px solid rgba(255,186,80,0.25); color: #FFBA50; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.25rem 0.625rem; border-radius: 99px; }
-  .colab-badge { display: inline-flex; align-items: center; gap: 0.375rem; background: rgba(121,145,252,0.12); border: 1px solid rgba(121,145,252,0.3); color: #7991fc; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.25rem 0.625rem; border-radius: 99px; }
 
   .dash-layout { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - 64px); }
 
@@ -69,8 +68,6 @@
   .btn-icon { width: 32px; height: 32px; border-radius: var(--r-sm); border: 1.5px solid var(--paper-3); background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; transition: border-color 0.2s, background 0.2s; }
   .btn-icon:hover { border-color: var(--brand); background: var(--brand-light); }
   .btn-icon.danger:hover { border-color: var(--danger); background: var(--danger-bg); }
-  /* Botões desabilitados para colaboradores */
-  .btn-icon:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
 
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(26,20,16,0.7); backdrop-filter: blur(4px); z-index: 200; align-items: center; justify-content: center; padding: 1rem; }
   .modal-overlay.open { display: flex; }
@@ -114,20 +111,6 @@
   .auth-wall h2 { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; color: var(--ink); margin-bottom: 0.5rem; }
   .auth-wall p { color: var(--ink-3); margin-bottom: 1.75rem; }
 
-  /* Banner de aviso para colaborador (somente leitura) */
-  .readonly-banner {
-    background: rgba(121,145,252,0.08);
-    border: 1px solid rgba(121,145,252,0.25);
-    color: #5a6fd6;
-    border-radius: var(--r-md);
-    padding: 0.75rem 1.25rem;
-    font-size: 0.875rem;
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.625rem;
-  }
-
   @media (max-width: 900px) {
     .dash-layout { grid-template-columns: 1fr; }
     .sidebar { display: none; }
@@ -149,23 +132,25 @@
     <li><a href="index.html">Ver site público</a></li>
   </ul>
   <div class="nav-cta" id="navCta">
-    <!-- preenchido pelo JS -->
+    <span class="org-badge">Organizador</span>
+    <span style="font-weight:600;color:rgba(255,255,255,0.85);font-size:0.875rem;" id="orgName">DJ Productions</span>
+    <button onclick="fazerLogout()" class="btn-ghost" style="color:rgba(255,255,255,0.5);">Sair</button>
   </div>
 </nav>
 
 <div id="authWall" class="auth-wall" style="display:none;">
   <div style="font-size:3rem;margin-bottom:1rem;">🔒</div>
   <h2>Acesso restrito a organizadores</h2>
-  <p>Faça login com sua conta de organizador ou colaborador para acessar o painel.</p>
-  <a href="login.html" class="btn-primary btn-lg" style="text-decoration:none;display:inline-block;">Fazer login</a>
+  <p>Faça login com sua conta de organizador para acessar o painel.</p>
+  <a href="login-organizador.html" class="btn-primary btn-lg" style="text-decoration:none;display:inline-block;">Entrar como organizador</a>
 </div>
 
 <div class="dash-layout" id="dashLayout" style="display:none;">
 
   <aside class="sidebar">
     <div class="sidebar-org">
-      <div class="org-name" id="sidebarOrgName">—</div>
-      <div class="org-type" id="sidebarOrgType">Carregando…</div>
+      <div class="org-name" id="sidebarOrgName">DJ Productions Ltda</div>
+      <div class="org-type">Produtora de eventos</div>
     </div>
     <ul class="sidebar-nav">
       <li><a href="#" class="active">📊 Painel</a></li>
@@ -179,15 +164,9 @@
   </aside>
 
   <main class="dash-main">
-    <!-- Aviso para colaboradores (somente leitura) -->
-    <div class="readonly-banner" id="readonlyBanner" style="display:none;">
-      ℹ️ Você está logado como <strong>Colaborador</strong>. Você pode visualizar os eventos, mas apenas o organizador dono pode criar, editar ou excluir.
-    </div>
-
     <div class="dash-header">
       <h1>Painel de Gestão</h1>
-      <!-- Botão "Criar evento" só aparece para o organizador dono -->
-      <button class="btn-primary btn-lg" id="btnCriarEvento" onclick="openCreateModal()" style="display:none;">+ Criar evento</button>
+      <button class="btn-primary btn-lg" onclick="openCreateModal()">+ Criar evento</button>
     </div>
 
     <div class="kpi-grid">
@@ -229,7 +208,6 @@
   </main>
 </div>
 
-<!-- Modal de criar/editar evento -->
 <div class="modal-overlay" id="eventModal" onclick="closeModalOutside(event)">
   <div class="modal-form">
     <div class="modal-form-header">
@@ -304,7 +282,6 @@
   </div>
 </div>
 
-<!-- Modal de confirmação de exclusão -->
 <div class="modal-overlay" id="deleteModal" onclick="closeDeleteOutside(event)">
   <div class="modal-form" style="max-width:400px;">
     <div class="modal-form-header">
@@ -329,176 +306,83 @@
 </div>
 
 <script>
-// ============================================================
-//  painel_organizador.js — CORRIGIDO
-//  Bugs resolvidos:
-//  1. init() agora lê as chaves corretas do localStorage (usuarioLogado/usuarioTipo)
-//     em vez de só 'orgLogado', que nunca era salvo pelo login.js antigo
-//  2. Badge de tipo exibido na nav (Organizador vs Colaborador)
-//  3. Botões de editar/excluir DESABILITADOS para colaboradores
-//  4. Botão "Criar evento" OCULTO para colaboradores
-//  5. Banner informativo para colaboradores
-//  6. fazerLogout limpa TODAS as chaves corretamente
-//  7. Segundo bloco de script (que conflitava) removido
-// ============================================================
+const API_BASE = 'http://127.0.0.1:8000/api';
 
-const API_BASE   = 'http://127.0.0.1:8000/api';
-let orgEvents    = [];
-let editingId    = null;
-let deleteId     = null;
+let orgEvents = [];
+let editingId = null;
+let deleteId = null;
+let loteCount = 0;
 let organizadorId = null;
-let usuarioTipo   = 'colaborador'; // padrão conservador
 
-// ID do dono do sistema (o Thiago / organizador principal).
-// O backend deve retornar este ID no login do organizador dono.
-// Aqui guardamos o valor que veio do login na variável organizadorId.
-// Um colaborador tem tipo='colaborador' e NÃO é o dono → sem edição.
-
-const eventsMock = [
-  { id_evento: "1", titulo: 'Rock in Rio de Janeiro 2026',    data_hora: '2026-09-15T19:00:00', local: 'Cidade do Rock — Barra da Tijuca', capacidade_maxima: 5000,  vendidos: 4800, categoria: 'rock',  status: 'ativo',    receita: 720000 },
-  { id_evento: "2", titulo: 'Feira de Música Independente',   data_hora: '2026-11-20T14:00:00', local: 'Centro de Convenções — Barra da Tijuca',  capacidade_maxima: 1500,  vendidos: 900,  categoria: 'indie', status: 'ativo',    receita: 45000  },
-  { id_evento: "3", titulo: 'Festival de Verão 2027',         data_hora: '2027-01-10T18:00:00', local: 'Praia de Ipanema',                        capacidade_maxima: 3000,  vendidos: 0,    categoria: 'pop',   status: 'rascunho', receita: 0      }
-];
-
-// ── INIT ──────────────────────────────────────────────────
 function init() {
-  // Lê as chaves salvas pelo login.js corrigido
-  const nome = localStorage.getItem('usuarioLogado');
-  organizadorId = localStorage.getItem('usuarioId')   || localStorage.getItem('orgId');
-  usuarioTipo   = localStorage.getItem('usuarioTipo') || localStorage.getItem('orgTipo') || '';
-
-  // Se não está logado ou não é org/colaborador, bloqueia
-  if (!nome || (usuarioTipo !== 'organizador' && usuarioTipo !== 'colaborador')) {
-    document.getElementById('authWall').style.display = 'block';
-    return;
+  const org = localStorage.getItem('orgLogado');
+  organizadorId = localStorage.getItem('orgId');
+  
+  if (!org || !organizadorId) { 
+    document.getElementById('authWall').style.display = 'block'; 
+    return; 
   }
-
-  // Mostra o layout
+  
   document.getElementById('dashLayout').style.display = 'grid';
-
-  // Atualiza sidebar
-  document.getElementById('sidebarOrgName').textContent = nome;
-  document.getElementById('sidebarOrgType').textContent =
-    usuarioTipo === 'organizador' ? 'Organizador de eventos' : 'Colaborador';
-
-  // Atualiza nav com badge correto
-  const navCta = document.getElementById('navCta');
-  if (navCta) {
-    const badgeHtml = usuarioTipo === 'organizador'
-      ? `<span class="org-badge">Organizador</span>`
-      : `<span class="colab-badge">Colaborador</span>`;
-    navCta.innerHTML = `
-      ${badgeHtml}
-      <span style="font-weight:600;color:rgba(255,255,255,0.85);font-size:0.875rem;">${nome.split(' ')[0]}</span>
-      <button onclick="fazerLogout()" class="btn-ghost" style="color:rgba(255,255,255,0.5);">Sair</button>`;
-  }
-
-  // ── PERMISSÕES ────────────────────────────────────────────
-  // Somente o organizador (dono) pode criar/editar/excluir eventos
-  const isDono = usuarioTipo === 'organizador';
-
-  if (isDono) {
-    document.getElementById('btnCriarEvento').style.display = 'inline-flex';
-  } else {
-    // Colaborador: mostra banner de aviso
-    document.getElementById('readonlyBanner').style.display = 'flex';
-  }
-
+  document.getElementById('orgName').textContent = org.split(' ')[0];
+  document.getElementById('sidebarOrgName').textContent = org;
+  
   carregarEventos();
 }
 
-// ── CARREGAR EVENTOS ───────────────────────────────────────
-async function carregarEventos() {
-  try {
-    if (organizadorId) {
-      const response = await fetch(`${API_BASE}/organizadores/${organizadorId}/eventos`);
-      if (response.ok) {
-        orgEvents = await response.json();
-      } else {
-        throw new Error('Erro ao carregar eventos');
-      }
-    } else {
-      throw new Error('ID do organizador não identificado');
-    }
-  } catch (error) {
-    console.error('Erro na API:', error);
-    orgEvents = eventsMock;
-    showToast('⚠️ Modo offline - usando dados de demonstração');
-  }
-
-  renderTable(orgEvents);
-  updateKPIs();
-}
-
-// ── LOGOUT ─────────────────────────────────────────────────
 function fazerLogout() {
-  localStorage.removeItem('usuarioLogado');
-  localStorage.removeItem('usuarioId');
-  localStorage.removeItem('usuarioTipo');
-  localStorage.removeItem('usuarioEmail');
   localStorage.removeItem('orgLogado');
   localStorage.removeItem('orgId');
   localStorage.removeItem('orgTipo');
   window.location.href = 'index.html';
 }
 
-// ── HELPERS ────────────────────────────────────────────────
 function fmtDate(d) {
   if (!d) return '';
-  const date   = new Date(d);
+  const date = new Date(d);
   const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
 }
 
 function formatDateTimeParaInput(dataHora) {
   if (!dataHora) return { data: '', hora: '' };
-  const d    = new Date(dataHora);
-  const data = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  const hora = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  const date = new Date(dataHora);
+  const data = date.toISOString().split('T')[0];
+  const hora = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
   return { data, hora };
 }
 
-// ── KPIs ───────────────────────────────────────────────────
 function updateKPIs() {
-  const ativos         = orgEvents.filter(e => e.status === 'ativo').length;
-  const totalVendidos  = orgEvents.reduce((s, e) => s + (e.vendidos || 0), 0);
-  const receitaTotal   = orgEvents.reduce((s, e) => s + (e.receita  || 0), 0);
-  const ocupacaoMedia  = orgEvents.length > 0
+  const ativos = orgEvents.filter(e => e.status === 'ativo').length;
+  const totalVendidos = orgEvents.reduce((s, e) => s + (e.vendidos || 0), 0);
+  const receitaTotal = orgEvents.reduce((s, e) => s + (e.receita || 0), 0);
+  const ocupacaoMedia = orgEvents.length > 0 
     ? Math.round(orgEvents.reduce((s, e) => s + ((e.vendidos || 0) / (e.capacidade_maxima || 1) * 100), 0) / orgEvents.length)
     : 0;
-  document.getElementById('kpiEventos').textContent  = ativos;
+  
+  document.getElementById('kpiEventos').textContent = ativos;
   document.getElementById('kpiVendidos').textContent = totalVendidos.toLocaleString('pt-BR');
-  document.getElementById('kpiReceita').textContent  = `R$ ${(receitaTotal / 1000).toFixed(1)}k`;
-  document.getElementById('kpiOcup').textContent     = `${ocupacaoMedia}%`;
+  document.getElementById('kpiReceita').textContent = `R$ ${(receitaTotal / 1000).toFixed(1)}k`;
+  document.getElementById('kpiOcup').textContent = `${ocupacaoMedia}%`;
 }
 
-// ── TABELA ─────────────────────────────────────────────────
 function renderTable(list) {
-  const tbody  = document.getElementById('tableBody');
-  const isDono = usuarioTipo === 'organizador';
-
+  const tbody = document.getElementById('tableBody');
   if (!list.length) {
     tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Nenhum evento encontrado. Crie seu primeiro evento!</td></tr>';
     return;
   }
-
+  
   tbody.innerHTML = list.map(ev => {
-    const pct        = ev.capacidade_maxima > 0 ? Math.round(((ev.vendidos || 0) / ev.capacidade_maxima) * 100) : 0;
+    const pct = ev.capacidade_maxima > 0 ? Math.round(((ev.vendidos || 0) / ev.capacidade_maxima) * 100) : 0;
     const badgeClass = ev.status === 'ativo' ? 'badge-ativo' : ev.status === 'encerrado' ? 'badge-encerrado' : 'badge-rascunho';
     const badgeLabel = ev.status === 'ativo' ? 'Publicado' : ev.status === 'encerrado' ? 'Encerrado' : 'Rascunho';
-    const dataFmt    = fmtDate(ev.data_hora);
-    const horaFmt    = ev.data_hora ? new Date(ev.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
-
-    // Botões de ação: habilitados só para o dono
-    const acoes = isDono
-      ? `<button class="btn-icon" onclick="openEditModal('${ev.id_evento}')" title="Editar">✏️</button>
-         <button class="btn-icon danger" onclick="openDeleteModal('${ev.id_evento}')" title="Excluir">🗑</button>`
-      : `<button class="btn-icon" disabled title="Apenas o organizador pode editar">✏️</button>
-         <button class="btn-icon danger" disabled title="Apenas o organizador pode excluir">🗑</button>`;
-
+    const dataFormatada = fmtDate(ev.data_hora);
+    const horaFormatada = ev.data_hora ? new Date(ev.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+    
     return `<tr>
       <td class="td-title">${ev.titulo}</td>
-      <td>${dataFmt} · ${horaFmt}</td>
+      <td>${dataFormatada} · ${horaFormatada}</td>
       <td>${(ev.vendidos || 0).toLocaleString('pt-BR')} / ${ev.capacidade_maxima.toLocaleString('pt-BR')}</td>
       <td>
         <div style="display:flex;align-items:center;gap:0.5rem;">
@@ -507,23 +391,22 @@ function renderTable(list) {
         </div>
       </td>
       <td><span class="td-badge ${badgeClass}">${badgeLabel}</span></td>
-      <td><div class="td-actions">${acoes}</div></td>
+      <td>
+        <div class="td-actions">
+          <button class="btn-icon" onclick="openEditModal('${ev.id_evento}')" title="Editar">✏️</button>
+          <button class="btn-icon danger" onclick="openDeleteModal('${ev.id_evento}')" title="Excluir">🗑</button>
+        </div>
+      </td>
     </tr>`;
   }).join('');
 }
 
 function filterTable(q) {
-  const filtered = orgEvents.filter(e =>
-    e.titulo.toLowerCase().includes(q.toLowerCase()) ||
-    (e.local || '').toLowerCase().includes(q.toLowerCase())
-  );
+  const filtered = orgEvents.filter(e => e.titulo.toLowerCase().includes(q.toLowerCase()) || (e.local || '').toLowerCase().includes(q.toLowerCase()));
   renderTable(filtered);
 }
 
-// ── MODAL CREATE/EDIT ──────────────────────────────────────
-// Só chega aqui se for dono (botão está oculto para colaboradores)
 function openCreateModal() {
-  if (usuarioTipo !== 'organizador') { showToast('⚠️ Apenas o organizador pode criar eventos.'); return; }
   editingId = null;
   document.getElementById('modalTitle').textContent = 'Criar evento';
   clearForm();
@@ -533,34 +416,32 @@ function openCreateModal() {
 }
 
 function openEditModal(id) {
-  if (usuarioTipo !== 'organizador') { showToast('⚠️ Apenas o organizador pode editar eventos.'); return; }
   const ev = orgEvents.find(e => e.id_evento === id);
   if (!ev) return;
-
+  
   editingId = id;
   document.getElementById('modalTitle').textContent = 'Editar evento';
-  document.getElementById('evNome').value       = ev.titulo;
-  document.getElementById('evDesc').value       = ev.descricao || '';
-  document.getElementById('evLocal').value      = ev.local || '';
+  document.getElementById('evNome').value = ev.titulo;
+  document.getElementById('evDesc').value = ev.descricao || '';
+  document.getElementById('evLocal').value = ev.local || '';
   document.getElementById('evCapacidade').value = ev.capacidade_maxima || '';
-  document.getElementById('evCategoria').value  = ev.categoria || 'rock';
-  document.getElementById('evStatus').value     = ev.status || 'rascunho';
-
+  document.getElementById('evCategoria').value = ev.categoria || 'rock';
+  document.getElementById('evStatus').value = ev.status || 'rascunho';
+  
   const { data, hora } = formatDateTimeParaInput(ev.data_hora);
   document.getElementById('evData').value = data;
   document.getElementById('evHora').value = hora;
-
+  
   document.getElementById('lotesRows').innerHTML = '';
   loteCount = 0;
   (ev.lotes || [{ nome: 'Pista Geral', preco: 100, qty: ev.capacidade_maxima || 100 }]).forEach(l => addLote(l.nome, l.preco, l.qty));
-
+  
   document.getElementById('formAlert').classList.remove('show');
   document.getElementById('eventModal').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
 
 function openDeleteModal(id) {
-  if (usuarioTipo !== 'organizador') { showToast('⚠️ Apenas o organizador pode excluir eventos.'); return; }
   deleteId = id;
   document.getElementById('deleteModal').classList.add('open');
 }
@@ -568,23 +449,22 @@ function openDeleteModal(id) {
 function clearForm() {
   ['evNome','evDesc','evData','evHora','evLocal','evCapacidade'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('evCategoria').value = '';
-  document.getElementById('evStatus').value    = 'rascunho';
+  document.getElementById('evStatus').value = 'rascunho';
   document.getElementById('lotesRows').innerHTML = '';
   document.getElementById('formAlert').classList.remove('show');
   loteCount = 0;
 }
 
-let loteCount = 0;
 function addLote(nome = '', preco = '', qty = '') {
   loteCount++;
-  const id  = loteCount;
+  const id = loteCount;
   const row = document.createElement('div');
   row.className = 'lote-row';
   row.id = `lote-${id}`;
   row.innerHTML = `
     <input type="text"   placeholder="Pista Geral" value="${nome}"  id="lnome-${id}">
-    <input type="number" placeholder="150"          value="${preco}" id="lpreco-${id}" min="0">
-    <input type="number" placeholder="100"          value="${qty}"   id="lqty-${id}"   min="1">
+    <input type="number" placeholder="150"        value="${preco}" id="lpreco-${id}" min="0">
+    <input type="number" placeholder="100"        value="${qty}"   id="lqty-${id}"   min="1">
     <button class="btn-remove-lote" onclick="removeLote(${id})">✕</button>`;
   document.getElementById('lotesRows').appendChild(row);
 }
@@ -598,31 +478,42 @@ function collectLotes() {
   const lotes = [];
   document.querySelectorAll('#lotesRows .lote-row').forEach(row => {
     const idNum = row.id.split('-')[1];
-    const nome  = document.getElementById(`lnome-${idNum}`).value.trim();
+    const nome = document.getElementById(`lnome-${idNum}`).value.trim();
     const preco = parseFloat(document.getElementById(`lpreco-${idNum}`).value);
-    const qty   = parseInt(document.getElementById(`lqty-${idNum}`).value);
+    const qty = parseInt(document.getElementById(`lqty-${idNum}`).value);
     if (nome && !isNaN(preco) && !isNaN(qty)) lotes.push({ nome, preco, qty });
   });
   return lotes;
 }
 
-// ── SALVAR EVENTO ──────────────────────────────────────────
-async function saveEvent() {
-  // Dupla verificação no front-end
-  if (usuarioTipo !== 'organizador') {
-    showToast('⚠️ Apenas o organizador pode salvar eventos.');
-    return;
+async function carregarEventos() {
+  try {
+    const response = await fetch(`${API_BASE}/organizadores/${organizadorId}/eventos`);
+    if (response.ok) {
+      orgEvents = await response.json();
+    } else {
+      throw new Error('Erro ao carregar eventos');
+    }
+  } catch (error) {
+    console.error('Erro na API:', error);
+    orgEvents = eventsMock;
+    showToast('⚠️ Modo offline - usando dados de demonstração');
   }
+  
+  renderTable(orgEvents);
+  updateKPIs();
+}
 
-  const nome       = document.getElementById('evNome').value.trim();
-  const data       = document.getElementById('evData').value;
-  const hora       = document.getElementById('evHora').value;
-  const local      = document.getElementById('evLocal').value.trim();
+async function saveEvent() {
+  const nome = document.getElementById('evNome').value.trim();
+  const data = document.getElementById('evData').value;
+  const hora = document.getElementById('evHora').value;
+  const local = document.getElementById('evLocal').value.trim();
   const capacidade = parseInt(document.getElementById('evCapacidade').value);
-  const categoria  = document.getElementById('evCategoria').value;
-  const status     = document.getElementById('evStatus').value;
-  const descricao  = document.getElementById('evDesc').value.trim();
-  const lotes      = collectLotes();
+  const categoria = document.getElementById('evCategoria').value;
+  const status = document.getElementById('evStatus').value;
+  const descricao = document.getElementById('evDesc').value.trim();
+  const lotes = collectLotes();
 
   if (!nome || !data || !hora || !local || !capacidade || !categoria) {
     document.getElementById('formAlertMsg').textContent = 'Preencha todos os campos obrigatórios.';
@@ -631,7 +522,15 @@ async function saveEvent() {
   }
 
   const dataHora = `${data}T${hora}:00`;
-  const payload  = { titulo: nome, descricao, data_hora: dataHora, local, capacidade_maxima: capacidade, categoria, status };
+  const payload = {
+    titulo: nome,
+    descricao: descricao,
+    data_hora: dataHora,
+    local: local,
+    capacidade_maxima: capacidade,
+    categoria: categoria,
+    status: status
+  };
 
   const btn = document.getElementById('saveEventBtn');
   btn.classList.add('loading');
@@ -643,10 +542,11 @@ async function saveEvent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      
       if (response.ok) {
-        const updated = await response.json();
+        const updatedEvent = await response.json();
         const idx = orgEvents.findIndex(e => e.id_evento === editingId);
-        if (idx > -1) orgEvents[idx] = { ...orgEvents[idx], ...updated, ...payload };
+        if (idx > -1) orgEvents[idx] = { ...orgEvents[idx], ...updatedEvent, ...payload };
         showToast('Evento atualizado com sucesso!');
       } else {
         throw new Error('Erro na atualização');
@@ -657,25 +557,40 @@ async function saveEvent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      
       if (response.ok) {
-        const newEv = await response.json();
-        orgEvents.unshift({ ...newEv, vendidos: 0, receita: 0, status });
+        const newEvent = await response.json();
+        orgEvents.unshift({ ...newEvent, vendidos: 0, receita: 0, status: status });
         showToast('Evento criado com sucesso!');
       } else {
         throw new Error('Erro na criação');
       }
     }
+    
     closeModal();
     renderTable(orgEvents);
     updateKPIs();
   } catch (error) {
     console.error('Erro ao salvar evento:', error);
-    // Fallback offline
     if (editingId) {
       const idx = orgEvents.findIndex(e => e.id_evento === editingId);
-      if (idx > -1) orgEvents[idx] = { ...orgEvents[idx], ...payload };
+      if (idx > -1) {
+        orgEvents[idx] = { ...orgEvents[idx], ...payload };
+      }
     } else {
-      orgEvents.unshift({ id_evento: Date.now().toString(), ...payload, vendidos: 0, receita: 0 });
+      const novoEvento = {
+        id_evento: Date.now().toString(),
+        titulo: nome,
+        descricao: descricao,
+        data_hora: dataHora,
+        local: local,
+        capacidade_maxima: capacidade,
+        categoria: categoria,
+        status: status,
+        vendidos: 0,
+        receita: 0
+      };
+      orgEvents.unshift(novoEvento);
     }
     closeModal();
     renderTable(orgEvents);
@@ -686,19 +601,24 @@ async function saveEvent() {
   }
 }
 
-// ── EXCLUIR EVENTO ─────────────────────────────────────────
 async function doDelete() {
-  if (!deleteId || usuarioTipo !== 'organizador') return;
-
+  if (!deleteId) return;
+  
+  const evento = orgEvents.find(e => e.id_evento === deleteId);
+  if (!evento) return;
+  
   try {
-    const response = await fetch(`${API_BASE}/eventos/${deleteId}?id_organizador=${organizadorId}`, {
+    const response = await fetch(`${API_BASE}/eventos/${deleteId}?id_organizador=${organizadorId}&data_hora=${encodeURIComponent(evento.data_hora)}`, {
       method: 'DELETE'
     });
-    if (!response.ok && response.status !== 204) throw new Error('Erro na exclusão');
+    
+    if (!response.ok && response.status !== 204) {
+      throw new Error('Erro na exclusão');
+    }
   } catch (error) {
     console.error('Erro ao excluir via API:', error);
   }
-
+  
   orgEvents = orgEvents.filter(e => e.id_evento !== deleteId);
   document.getElementById('deleteModal').classList.remove('open');
   renderTable(orgEvents);
@@ -707,7 +627,6 @@ async function doDelete() {
   deleteId = null;
 }
 
-// ── MODAL HELPERS ──────────────────────────────────────────
 function closeModal() {
   document.getElementById('eventModal').classList.remove('open');
   document.body.style.overflow = '';
@@ -728,7 +647,12 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 3500);
 }
 
-// ── INICIALIZA ─────────────────────────────────────────────
+const eventsMock = [
+  { id_evento: "1", titulo: 'Rock in Rio de Janeiro 2026', data_hora: '2026-09-15T19:00:00', local: 'Cidade do Rock — Barra da Tijuca', capacidade_maxima: 5000, vendidos: 4800, categoria: 'rock', status: 'ativo', receita: 720000 },
+  { id_evento: "2", titulo: 'Feira de Música Independente', data_hora: '2026-11-20T14:00:00', local: 'Centro de Convenções — Barra da Tijuca', capacidade_maxima: 1500, vendidos: 900, categoria: 'indie', status: 'ativo', receita: 45000 },
+  { id_evento: "3", titulo: 'Festival de Verão 2027', data_hora: '2027-01-10T18:00:00', local: 'Praia de Ipanema', capacidade_maxima: 3000, vendidos: 0, categoria: 'pop', status: 'rascunho', receita: 0 }
+];
+
 document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
