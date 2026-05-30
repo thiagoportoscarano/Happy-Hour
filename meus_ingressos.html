@@ -363,27 +363,35 @@ function closeCancelModal(e) {
 
 async function doCancel() {
   if (!cancelTarget) return;
-  
+
   const ticket = allTickets.find(x => x.id_ticket === cancelTarget);
   if (!ticket) return;
-  
+
+  const btn = document.getElementById('confirmCancelBtn');
+  btn.disabled = true;
+  btn.textContent = 'Removendo…';
+
   try {
     const usuarioId = localStorage.getItem('usuarioId');
-    const url = `${API_BASE}/tickets/${cancelTarget}/cancelar?id_cliente=${usuarioId}&id_evento=${ticket.id_evento}&codigo_qr=${encodeURIComponent(ticket.codigo_qr)}&data_compra=${encodeURIComponent(ticket.data_compra)}`;
-    
-    const response = await fetch(url, { method: 'PATCH' });
-    
+    const url = `${API_BASE}/tickets/${cancelTarget}?id_cliente=${usuarioId}&id_evento=${ticket.id_evento}&codigo_qr=${encodeURIComponent(ticket.codigo_qr)}&data_compra=${encodeURIComponent(ticket.data_compra)}`;
+
+    const response = await fetch(url, { method: 'DELETE' });
+
     if (response.ok) {
-      ticket.status = 'cancelado';
-      showToast('Ingresso cancelado com sucesso!');
+      // Remove o ingresso da lista local — ele some da tela
+      allTickets = allTickets.filter(x => x.id_ticket !== cancelTarget);
+      showToast('🗑 Ingresso removido com sucesso!');
     } else {
-      throw new Error('Erro no cancelamento');
+      const erro = await response.json().catch(() => ({}));
+      showToast(`❌ Erro ao remover: ${erro.detail || 'tente novamente.'}`);
     }
   } catch (error) {
-    ticket.status = 'cancelado';
-    showToast('Ingresso cancelado (modo offline)');
+    console.error('Erro ao deletar ingresso:', error);
+    showToast('❌ Não foi possível conectar ao servidor.');
   }
-  
+
+  btn.disabled = false;
+  btn.textContent = 'Cancelar ingresso';
   document.getElementById('cancelModal').classList.remove('open');
   renderTickets();
   cancelTarget = null;

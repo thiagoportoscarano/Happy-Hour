@@ -580,16 +580,10 @@ async function doLogin() {
     const data = await response.json();
 
     if (response.ok) {
-      if (data.tipo && data.tipo !== 'organizador') {
-        document.getElementById('loginAlertMsg').textContent =
-          'Esta conta não é de um organizador. Use o login de clientes.';
-        document.getElementById('loginAlert').classList.add('show');
-        return;
-      }
       localStorage.setItem('orgLogado', data.nome);
       localStorage.setItem('orgId', data.id_usuario);
       localStorage.setItem('orgTipo', data.tipo || 'organizador');
-      window.location.href = 'painel-organizador.html';
+      window.location.href = 'painel_organizador.html';
     } else {
       document.getElementById('loginAlertMsg').textContent = data.detail || 'Erro ao fazer login.';
       document.getElementById('loginAlert').classList.add('show');
@@ -602,7 +596,7 @@ async function doLogin() {
       localStorage.setItem('orgLogado', org.nome);
       localStorage.setItem('orgId', '44455566-7770-0000-0000-000000000001');
       localStorage.setItem('orgTipo', 'organizador');
-      window.location.href = 'painel-organizador.html';
+      window.location.href = 'painel_organizador.html';
     } else {
       document.getElementById('loginAlertMsg').textContent =
         'E-mail ou senha incorretos, ou esta conta não é de um organizador.';

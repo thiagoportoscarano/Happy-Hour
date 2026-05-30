@@ -5,7 +5,7 @@ Ponto de entrada do backend Happy Hour
 Conecta ao Cassandra no startup e desconecta no shutdown via lifespan
 
 Como rodar:
-    uvicorn main:app --reload --port 8000
+    uvicorn main:app --reload 
 """
 
 import logging

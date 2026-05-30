@@ -83,6 +83,7 @@ class CompraRequest(BaseModel):
 
 class TicketResponse(BaseModel):
     id_ticket: str
+    id_evento: str        # necessário para cancelamento e deleção no frontend
     codigo_qr: str
     status: str
     data_compra: datetime
@@ -99,3 +100,17 @@ class CheckinResponse(BaseModel):
     autorizado: bool
     mensagem: str
     nome_cliente: Optional[str] = None
+
+
+class LoteCreate(BaseModel):
+    nome: str
+    preco: float
+    quantidade: int
+
+
+class LoteResponse(BaseModel):
+    id_lote: str
+    id_evento: str
+    nome: str
+    preco: float
+    quantidade: int

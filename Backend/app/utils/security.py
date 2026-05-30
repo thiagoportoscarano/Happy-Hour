@@ -1,11 +1,10 @@
 from passlib.context import CryptContext
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
+# Certifique-se de ter ajustado para argon2 ou bcrypt conforme conversamos
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 def hash_senha(senha: str) -> str:
-    return pwd_context.hash(senha)
+    return pwd_context.hash(senha[:72])
 
-
-def verificar_senha(senha_plain: str, senha_hash: str) -> bool:
-    return pwd_context.verify(senha_plain, senha_hash)
+def verificar_senha(senha: str, hash_da_senha: str) -> bool:
+    return pwd_context.verify(senha[:72], hash_da_senha)

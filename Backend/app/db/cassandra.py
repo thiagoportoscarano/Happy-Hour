@@ -221,4 +221,17 @@ def _criar_tabelas():
         );
     """)
 
+    # 7. Lotes por evento — tipos e preços de ingresso definidos pelo organizador
+    #    Partition key = id_evento; clustering key = id_lote para permitir múltiplos lotes
+    _session.execute("""
+        CREATE TABLE IF NOT EXISTS lotes_por_evento (
+            id_evento       UUID,
+            id_lote         UUID,
+            nome            TEXT,
+            preco           DECIMAL,
+            quantidade      INT,
+            PRIMARY KEY (id_evento, id_lote)
+        ) WITH CLUSTERING ORDER BY (id_lote ASC);
+    """)
+
     logger.info("Tabelas Cassandra verificadas/criadas com sucesso.")
