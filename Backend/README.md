@@ -152,10 +152,3 @@ em desenvolvimento.
 
 ---
 
-## Próximos passos sugeridos
-
-- [ ] Implementar JWT para sessão autenticada (não usar `localStorage` em produção)
-- [ ] Adicionar confirmação por e-mail (status `aguardando_confirmacao`)
-- [ ] Integrar gateway de pagamento (Stripe / PagSeguro) antes de emitir o ticket
-- [ ] Trocar `SimpleStrategy` por `NetworkTopologyStrategy` ao escalar para cluster
-- [ ] Adicionar testes com `pytest` + `pytest-asyncio`
