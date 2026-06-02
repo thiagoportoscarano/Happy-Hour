@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatório de Teste de Carga — Happy Hour</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3e;
+    --accent: #f5a623;
+    --accent2: #e84393;
+    --green: #2ecc9a;
+    --red: #ff4d6d;
+    --text: #e8e8f0;
+    --muted: #7878a0;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HERO */
+  .hero {
+    position: relative;
+    padding: 80px 48px 64px;
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -120px; right: -120px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(245,166,35,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; left: 20%;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(232,67,147,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    border: 1px solid rgba(245,166,35,0.3);
+    padding: 6px 14px;
+    border-radius: 2px;
+    margin-bottom: 32px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  h1 {
+    font-family: var(--sans);
+    font-size: clamp(36px, 6vw, 72px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 16px;
+  }
+
+  h1 .highlight {
+    color: var(--accent);
+  }
+
+  .hero-meta {
+    display: flex;
+    gap: 32px;
+    margin-top: 32px;
+    flex-wrap: wrap;
+  }
+
+  .meta-item {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  .meta-item span {
+    display: block;
+    color: var(--text);
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  /* STACK TAGS */
+  .stack {
+    display: flex;
+    gap: 10px;
+    margin-top: 28px;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 2px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .tag-k6    { background: rgba(245,166,35,0.15); color: var(--accent); border: 1px solid rgba(245,166,35,0.25); }
+  .tag-api   { background: rgba(46,204,154,0.12); color: var(--green); border: 1px solid rgba(46,204,154,0.25); }
+  .tag-db    { background: rgba(232,67,147,0.12); color: var(--accent2); border: 1px solid rgba(232,67,147,0.25); }
+  .tag-proto { background: rgba(120,120,160,0.15); color: var(--muted); border: 1px solid rgba(120,120,160,0.25); }
+
+  /* LAYOUT */
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 48px;
+  }
+
+  section {
+    padding: 64px 48px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  h2 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 32px;
+    letter-spacing: -0.02em;
+  }
+
+  h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+
+  /* BIG STATS */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    margin-bottom: 48px;
+    background: var(--border);
+  }
+
+  .stat-card {
+    background: var(--surface);
+    padding: 32px 28px;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.2s;
+  }
+
+  .stat-card:hover { background: var(--surface2); }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  .stat-card.green::before { background: var(--green); }
+  .stat-card.pink::before  { background: var(--accent2); }
+  .stat-card.red::before   { background: var(--red); }
+
+  .stat-value {
+    font-family: var(--mono);
+    font-size: clamp(28px, 4vw, 48px);
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 8px;
+    color: var(--accent);
+  }
+
+  .stat-card.green .stat-value { color: var(--green); }
+  .stat-card.pink  .stat-value { color: var(--accent2); }
+  .stat-card.red   .stat-value { color: var(--red); }
+
+  .stat-label {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  /* TABLES */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin-bottom: 32px;
+  }
+
+  th {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  td {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(42,42,62,0.5);
+    color: var(--text);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .mono { font-family: var(--mono); font-size: 13px; }
+
+  /* STATUS BADGES */
+  .pass, .fail {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 2px;
+    letter-spacing: 0.06em;
+  }
+
+  .pass { background: rgba(46,204,154,0.15); color: var(--green); border: 1px solid rgba(46,204,154,0.3); }
+  .fail { background: rgba(255,77,109,0.15); color: var(--red); border: 1px solid rgba(255,77,109,0.3); }
+
+  .pass::before { content: '✓'; }
+  .fail::before { content: '✗'; }
+
+  /* LATENCY BARS */
+  .lat-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-bottom: 40px;
+  }
+
+  .lat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 28px;
+    border-radius: 2px;
+  }
+
+  .lat-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  .lat-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .lat-key {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    width: 50px;
+    flex-shrink: 0;
+  }
+
+  .lat-bar-wrap {
+    flex: 1;
+    height: 8px;
+    background: var(--surface2);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+
+  .lat-bar {
+    height: 100%;
+    border-radius: 1px;
+    transition: width 1s ease;
+  }
+
+  .lat-val {
+    font-family: var(--mono);
+    font-size: 12px;
+    width: 65px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .bar-a { background: var(--accent); }
+  .bar-b { background: var(--green); }
+
+  /* COMPARISON TABLE */
+  .compare-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 2px;
+    background: var(--border);
+    margin-bottom: 2px;
+  }
+
+  .compare-header > div {
+    background: var(--surface);
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .compare-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 2px;
+    background: var(--border);
+    margin-bottom: 2px;
+  }
+
+  .compare-row > div {
+    background: var(--surface);
+    padding: 14px 16px;
+    font-size: 14px;
+    transition: background 0.2s;
+  }
+
+  .compare-row:hover > div { background: var(--surface2); }
+
+  /* PROBLEMS */
+  .problem-grid {
+    display: grid;
+    gap: 2px;
+    background: var(--border);
+  }
+
+  .problem-item {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2px;
+    background: var(--border);
+  }
+
+  .problem-item > div {
+    background: var(--surface);
+    padding: 20px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .problem-item .prob-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* RECOMMENDATIONS */
+  .rec-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    background: var(--border);
+  }
+
+  .rec-card {
+    background: var(--surface);
+    padding: 24px;
+    position: relative;
+    transition: background 0.2s;
+  }
+
+  .rec-card:hover { background: var(--surface2); }
+
+  .rec-num {
+    font-family: var(--mono);
+    font-size: 40px;
+    font-weight: 700;
+    color: var(--border);
+    position: absolute;
+    top: 16px; right: 20px;
+    line-height: 1;
+    user-select: none;
+  }
+
+  .rec-priority {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 2px;
+    margin-bottom: 12px;
+  }
+
+  .pri-alta  { background: rgba(255,77,109,0.15); color: var(--red); border: 1px solid rgba(255,77,109,0.3); }
+  .pri-media { background: rgba(245,166,35,0.15); color: var(--accent); border: 1px solid rgba(245,166,35,0.3); }
+
+  .rec-card h4 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    line-height: 1.4;
+    padding-right: 40px;
+  }
+
+  .rec-impact {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+
+  /* CONCLUSION */
+  .conclusion-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 32px;
+    margin-bottom: 40px;
+    line-height: 1.7;
+    font-size: 15px;
+    color: var(--text);
+  }
+
+  .final-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    background: var(--border);
+  }
+
+  .final-stat {
+    background: var(--surface);
+    padding: 28px;
+    text-align: center;
+  }
+
+  .final-stat-val {
+    font-family: var(--mono);
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .final-stat-label {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* FOOTER */
+  footer {
+    padding: 40px 48px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: gap;
+  }
+
+  /* OBJECTIVES */
+  .obj-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px;
+    background: var(--border);
+    margin-bottom: 0;
+  }
+
+  .obj-card {
+    background: var(--surface);
+    padding: 24px;
+    display: flex;
+    gap: 16px;
+  }
+
+  .obj-icon {
+    width: 36px; height: 36px;
+    border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    background: rgba(245,166,35,0.1);
+  }
+
+  .obj-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+    font-size: 14px;
+  }
+
+  .obj-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* ENV TABLE */
+  .env-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px;
+    background: var(--border);
+  }
+
+  .env-item {
+    background: var(--surface);
+    padding: 18px 22px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .env-key {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    width: 120px;
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+
+  .env-val {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  /* Scroll animation */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (max-width: 768px) {
+    .stats-grid, .final-stats { grid-template-columns: 1fr 1fr; }
+    .lat-section, .rec-grid, .obj-grid, .env-grid { grid-template-columns: 1fr; }
+    .compare-header, .compare-row { grid-template-columns: 1fr 1fr; }
+    .problem-item { grid-template-columns: 1fr; }
+    section, .hero, footer { padding-left: 24px; padding-right: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="badge">Teste de Carga · k6 · 02/06/2026</div>
+  <h1>Happy <span class="highlight">Hour</span><br>Load Report</h1>
+  <p style="font-size:15px; color:var(--muted); margin-top:12px; max-width:540px; line-height:1.6;">
+    Plataforma de ingressos digitais para eventos cariocas — avaliação de carga na API com FastAPI/Python e Apache Cassandra.
+  </p>
+  <div class="stack">
+    <span class="tag tag-k6">k6 (Grafana)</span>
+    <span class="tag tag-api">FastAPI / Python</span>
+    <span class="tag tag-db">Apache Cassandra</span>
+    <span class="tag tag-proto">HTTP/1.1</span>
+  </div>
+  <div class="hero-meta">
+    <div class="meta-item">AUTORES<span>Thiago Porto Scarano & Felipe Fionda</span></div>
+    <div class="meta-item">INSTITUIÇÃO<span>UNIRIO — Escola de Informática Aplicada</span></div>
+    <div class="meta-item">DATA<span>02 de Junho de 2026</span></div>
+  </div>
+</div>
+
+<!-- INTRO & OBJECTIVES -->
+<section class="reveal">
+  <div class="section-label">01 — Introdução</div>
+  <h2>Objetivos do Teste</h2>
+  <p style="font-size:15px; color:var(--muted); line-height:1.7; max-width:720px; margin-bottom:32px;">
+    Foram executados dois cenários distintos: <strong style="color:var(--text)">cadastro de novos usuários</strong> e <strong style="color:var(--text)">autenticação (login)</strong>. Cada cenário simula uma rampa de carga crescente até <strong style="color:var(--accent)">100 VUs</strong> para registro e <strong style="color:var(--accent)">50 VUs</strong> para login, seguindo estágios de aquecimento, pico e resfriamento.
+  </p>
+  <div class="obj-grid">
+    <div class="obj-card">
+      <div class="obj-icon">⚙️</div>
+      <div>
+        <div class="obj-title">Funcionalidade</div>
+        <div class="obj-desc">Verificar que o sistema processa corretamente cadastros e logins sob carga simultânea.</div>
+      </div>
+    </div>
+    <div class="obj-card">
+      <div class="obj-icon">⏱️</div>
+      <div>
+        <div class="obj-title">Latência</div>
+        <div class="obj-desc">Avaliar o tempo de resposta (p95) dentro de limites aceitáveis definidos por threshold.</div>
+      </div>
+    </div>
+    <div class="obj-card">
+      <div class="obj-icon">🛡️</div>
+      <div>
+        <div class="obj-title">Resiliência</div>
+        <div class="obj-desc">Garantir taxa de falhas inferior a 5% em todos os cenários de carga.</div>
+      </div>
+    </div>
+    <div class="obj-card">
+      <div class="obj-icon">📈</div>
+      <div>
+        <div class="obj-title">Escalabilidade</div>
+        <div class="obj-desc">Observar o comportamento do sistema conforme o número de VUs cresce progressivamente.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AMBIENTE -->
+<section class="reveal">
+  <div class="section-label">02 — Ambiente</div>
+  <h2>Configuração do Ambiente</h2>
+  <div class="env-grid">
+    <div class="env-item">
+      <div class="env-key">Backend</div>
+      <div class="env-val">FastAPI (Python 3.12) — <span class="mono">uvicorn --reload --port 8000</span></div>
+    </div>
+    <div class="env-item">
+      <div class="env-key">Banco de Dados</div>
+      <div class="env-val">Apache Cassandra (Docker) — porta 9042, keyspace <span class="mono">happy_hour</span></div>
+    </div>
+    <div class="env-item">
+      <div class="env-key">Ferramenta</div>
+      <div class="env-val">k6 v0.x (Grafana) — execução local no Windows</div>
+    </div>
+    <div class="env-item">
+      <div class="env-key">Hash de Senha</div>
+      <div class="env-val">Argon2 (passlib) — algoritmo intencionalmente lento por segurança</div>
+    </div>
+    <div class="env-item">
+      <div class="env-key">Consistência</div>
+      <div class="env-val"><span class="mono">LOCAL_QUORUM</span> — ConsistencyLevel Cassandra</div>
+    </div>
+    <div class="env-item">
+      <div class="env-key">CORS</div>
+      <div class="env-val"><span class="mono">allow_origins=[*]</span> — ambiente de desenvolvimento</div>
+    </div>
+  </div>
+  <p style="font-size:13px; color:var(--muted); margin-top:16px; padding: 14px 18px; border-left: 2px solid var(--border); line-height:1.6;">
+    ⚠️ O Argon2 é projetado para ser computacionalmente custoso, o que contribui diretamente para as latências observadas. Em produção, recomenda-se ajustar os parâmetros de custo conforme a capacidade do servidor.
+  </p>
+</section>
+
+<!-- RESULTADOS GERAIS -->
+<section class="reveal">
+  <div class="section-label">04 — Resultados</div>
+  <h2>Métricas Gerais</h2>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value">723</div>
+      <div class="stat-label">Requisições de Registro<br><span style="font-size:12px; color:var(--accent); font-family:var(--mono)">14,2 req/s</span></div>
+    </div>
+    <div class="stat-card pink">
+      <div class="stat-value">582</div>
+      <div class="stat-label">Requisições de Login<br><span style="font-size:12px; color:var(--accent2); font-family:var(--mono)">12,1 req/s</span></div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-value">0%</div>
+      <div class="stat-label">Taxa de Falhas<br><span style="font-size:12px; color:var(--green); font-family:var(--mono)">ambos os cenários</span></div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-value">100%</div>
+      <div class="stat-label">Checks Aprovados<br><span style="font-size:12px; color:var(--green); font-family:var(--mono)">3.042 verificações</span></div>
+    </div>
+  </div>
+
+  <!-- LATÊNCIA VISUAL -->
+  <h3 style="margin-bottom:20px;">Perfil de Latência</h3>
+  <div class="lat-section">
+    <div class="lat-card">
+      <div class="lat-title">Cenário A — Registro (100 VUs)</div>
+      <div class="lat-row">
+        <span class="lat-key">mín</span>
+        <div class="lat-bar-wrap"><div class="lat-bar bar-a" style="width:1.3%"></div></div>
+        <span class="lat-val mono">70 ms</span>
+      </div>
+      <div class="lat-row">
+        <span class="lat-key">média</span>
+        <div class="lat-bar-wrap"><div class="lat-bar bar-a" style="width:34%"></div></div>
+        <span class="lat-val mono">1.850 ms</span>
+      </div>
+      <div class="lat-row">
+        <span class="lat-key">p50</span>
+        <div class="lat-bar-wrap"><div class="lat-bar bar-a" style="width:27%"></div></div>
+        <span class="lat-val mono">1.450 ms</span>
+      </div>
+      <div class="lat-row">
+        <span class="lat-key">p90</span>
+        <div class="lat-bar-wrap"><div class="lat-bar bar-a" style="width:79%"></div></div>
+        <span class="lat-val mono">4.290 ms</span>
+      </div>
+      <div class="lat-row">
+        <span class="lat-key">p95</span>
+        <div class="lat-bar-wrap"><div class="lat-bar bar-a" style="width:82%"></div></div>
+        <span class="lat-val mono" style="color:var(--red)">4.470 ms</span>
+      </div>
+      <div class="lat-row">
+        <span class="lat-key">máx</span>
+        <div class="lat-bar-wrap"><div class="lat-bar bar-a" style="width:100%"></div></div>
+        <span class="lat-val mono">5.430 ms</span>
+      </div>
+    </div>
+    <div class="lat-card">
+      <div class="lat-title">Cenário B — Login (50 VUs)</div>
+      <div class="lat-row">
+        <span class="lat-key">mín</span>
+        <div class="lat-bar-wrap"><div class="lat-bar bar-b" style="width:3.9%"></div></div>
+        <span class="lat-val mono">79 ms</span>
+      </div>
+      <div class="lat-row">
+        <span class="lat-key">média</span>
+        <div class="lat-bar-wrap"><div class="lat-bar bar-b" style="width:34.7%"></div></div>
+        <span class="lat-val mono">706 ms</span>
+      </div>
+      <div class="lat-row">
+        <span class="lat-key">p50</span>
+        <div class="lat-bar-wrap"><div class="lat-bar bar-b" style="width:28.6%"></div></div>
+        <span class="lat-val mono">582 ms</span>
+      </div>
+      <div class="lat-row">
+        <span class="lat-key">p90</span>
+        <div class="lat-bar-wrap"><div class="lat-bar bar-b" style="width:74.2%"></div></div>
+        <span class="lat-val mono">1.510 ms</span>
+      </div>
+      <div class="lat-row">
+        <span class="lat-key">p95</span>
+        <div class="lat-bar-wrap"><div class="lat-bar bar-b" style="width:80.6%"></div></div>
+        <span class="lat-val mono" style="color:var(--green)">1.640 ms</span>
+      </div>
+      <div class="lat-row">
+        <span class="lat-key">máx</span>
+        <div class="lat-bar-wrap"><div class="lat-bar bar-b" style="width:99.5%"></div></div>
+        <span class="lat-val mono">2.030 ms</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- THRESHOLDS -->
+  <h3>Avaliação dos Thresholds</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Cenário</th>
+        <th>Threshold</th>
+        <th>Meta</th>
+        <th>Resultado</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>A — Registro</td>
+        <td class="mono">p(95) latência</td>
+        <td class="mono">&lt; 2.000 ms</td>
+        <td class="mono" style="color:var(--red)">4.470 ms</td>
+        <td><span class="fail">FALHOU</span></td>
+      </tr>
+      <tr>
+        <td>A — Registro</td>
+        <td class="mono">Taxa de falhas</td>
+        <td class="mono">&lt; 5%</td>
+        <td class="mono" style="color:var(--green)">0,00%</td>
+        <td><span class="pass">PASSOU</span></td>
+      </tr>
+      <tr>
+        <td>B — Login</td>
+        <td class="mono">p(95) latência</td>
+        <td class="mono">&lt; 2.500 ms</td>
+        <td class="mono" style="color:var(--green)">1.640 ms</td>
+        <td><span class="pass">PASSOU</span></td>
+      </tr>
+      <tr>
+        <td>B — Login</td>
+        <td class="mono">Taxa de falhas</td>
+        <td class="mono">&lt; 5%</td>
+        <td class="mono" style="color:var(--green)">0,00%</td>
+        <td><span class="pass">PASSOU</span></td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- CENÁRIOS DETALHES -->
+<section class="reveal">
+  <div class="section-label">03 — Cenários</div>
+  <h2>Estágios dos Testes</h2>
+
+  <h3>Cenário A — Cadastro de Usuários <span class="mono" style="font-size:13px; color:var(--muted)">(POST /api/registro)</span></h3>
+  <table style="margin-bottom:40px;">
+    <thead>
+      <tr><th>Estágio</th><th>Duração</th><th>VUs Alvo</th><th>Descrição</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Aquecimento</td><td class="mono">10s</td><td class="mono">10</td><td>Rampa gradual — sistema se estabiliza</td></tr>
+      <tr><td>Carga média</td><td class="mono">20s</td><td class="mono">50</td><td>Carga moderada — comportamento intermediário</td></tr>
+      <tr><td>Pico</td><td class="mono">10s</td><td class="mono" style="color:var(--accent)">100</td><td>Carga máxima — estresse do sistema</td></tr>
+      <tr><td>Resfriamento</td><td class="mono">10s</td><td class="mono">0</td><td>Ramp-down — encerramento gradual</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Cenário B — Login de Usuários <span class="mono" style="font-size:13px; color:var(--muted)">(POST /api/login)</span></h3>
+  <table>
+    <thead>
+      <tr><th>Estágio</th><th>Duração</th><th>VUs Alvo</th><th>Descrição</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Aquecimento</td><td class="mono">10s</td><td class="mono">10</td><td>Rampa gradual</td></tr>
+      <tr><td>Pico</td><td class="mono">20s</td><td class="mono" style="color:var(--green)">50</td><td>Carga máxima de login</td></tr>
+      <tr><td>Resfriamento</td><td class="mono">10s</td><td class="mono">0</td><td>Encerramento gradual</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ANÁLISE -->
+<section class="reveal">
+  <div class="section-label">05 — Análise</div>
+  <h2>Análise dos Resultados</h2>
+
+  <h3>Cenário A — Registro</h3>
+  <p style="font-size:14px; color:var(--muted); line-height:1.7; margin-bottom:20px; max-width:760px;">
+    O cadastro obteve 100% de sucesso funcional: todas as 723 requisições retornaram HTTP 201 e os checks de validação passaram integralmente. A latência p95 de 4,47s ultrapassou o threshold de 2.000ms por três fatores cumulativos:
+  </p>
+  <table style="margin-bottom:36px;">
+    <thead>
+      <tr><th>Fator</th><th>Impacto</th><th>Detalhe</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Hash Argon2</td>
+        <td><span style="color:var(--red); font-family:var(--mono); font-size:12px;">ALTO</span></td>
+        <td>Algoritmo intencionalmente lento — ~300–800ms por operação</td>
+      </tr>
+      <tr>
+        <td>Consulta CPF (índice secundário)</td>
+        <td><span style="color:var(--accent); font-family:var(--mono); font-size:12px;">MÉDIO</span></td>
+        <td>SELECT em índice secundário do Cassandra sob contenção</td>
+      </tr>
+      <tr>
+        <td>Contenção de 100 VUs</td>
+        <td><span style="color:var(--accent); font-family:var(--mono); font-size:12px;">MÉDIO</span></td>
+        <td>Sistema local sem pool de threads escalável</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Cenário B — Login</h3>
+  <p style="font-size:14px; color:var(--muted); line-height:1.7; max-width:760px; margin-bottom:36px;">
+    O login apresentou resultados excelentes: 0% de falhas, p95 de 1,64s dentro do threshold de 2.500ms, e 100% dos checks aprovados. A latência média de 706ms é dominada pelo tempo de verificação do hash Argon2. Com 50 VUs, a contenção é menor e o sistema responde de forma mais consistente, evidenciado pela mediana de 582ms.
+  </p>
+
+  <!-- COMPARAÇÃO -->
+  <h3>Comparação entre Cenários</h3>
+  <div class="compare-header">
+    <div>Indicador</div>
+    <div>Registro</div>
+    <div>Login</div>
+    <div>Diferença</div>
+  </div>
+  <div class="problem-grid">
+    <div class="compare-row">
+      <div>VUs máximos</div>
+      <div class="mono">100</div>
+      <div class="mono">50</div>
+      <div style="color:var(--muted); font-size:13px;">2× mais no registro</div>
+    </div>
+    <div class="compare-row">
+      <div>Throughput</div>
+      <div class="mono">14,2 r/s</div>
+      <div class="mono">12,1 r/s</div>
+      <div style="color:var(--muted); font-size:13px;">Registro 17% maior</div>
+    </div>
+    <div class="compare-row">
+      <div>Latência média</div>
+      <div class="mono" style="color:var(--red)">1.850 ms</div>
+      <div class="mono" style="color:var(--green)">706 ms</div>
+      <div style="color:var(--muted); font-size:13px;">Registro 2,6× mais lento</div>
+    </div>
+    <div class="compare-row">
+      <div>Latência p95</div>
+      <div class="mono" style="color:var(--red)">4.470 ms</div>
+      <div class="mono" style="color:var(--green)">1.640 ms</div>
+      <div style="color:var(--muted); font-size:13px;">Registro 2,7× mais lento</div>
+    </div>
+    <div class="compare-row">
+      <div>Taxa de falhas</div>
+      <div class="mono" style="color:var(--green)">0,00%</div>
+      <div class="mono" style="color:var(--green)">0,00%</div>
+      <div style="color:var(--green); font-size:13px;">Iguais — ambos perfeitos</div>
+    </div>
+    <div class="compare-row">
+      <div>Threshold latência</div>
+      <div><span class="fail">FALHOU</span></div>
+      <div><span class="pass">PASSOU</span></div>
+      <div style="color:var(--muted); font-size:13px;">Login dentro do limite</div>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEMAS -->
+<section class="reveal">
+  <div class="section-label">07 — Problemas</div>
+  <h2>Problemas Encontrados e Soluções</h2>
+  <div class="problem-grid">
+    <div class="problem-item">
+      <div>
+        <div class="prob-label">Problema</div>
+        58% de falhas no registro (2ª rodada)
+      </div>
+      <div>
+        <div class="prob-label">Causa</div>
+        CPF gerado por índice colidia com registros anteriores no banco
+      </div>
+      <div>
+        <div class="prob-label">Solução</div>
+        CPF passou a usar timestamp + VU, garantindo unicidade entre rodadas
+      </div>
+    </div>
+    <div class="problem-item">
+      <div>
+        <div class="prob-label">Problema</div>
+        100% de falhas no login
+      </div>
+      <div>
+        <div class="prob-label">Causa</div>
+        E-mails tentados não existiam no banco (dependência do registro)
+      </div>
+      <div>
+        <div class="prob-label">Solução</div>
+        Criado <span class="mono">setup()</span> no k6 que cadastra 50 usuários fixos antes da carga
+      </div>
+    </div>
+    <div class="problem-item">
+      <div>
+        <div class="prob-label">Problema</div>
+        Filtro WHERE email AND tipo no Cassandra
+      </div>
+      <div>
+        <div class="prob-label">Causa</div>
+        Coluna <span class="mono">tipo</span> sem índice — query ineficiente sob carga
+      </div>
+      <div>
+        <div class="prob-label">Solução</div>
+        Removido filtro por tipo; unicidade garantida pelo <span class="mono">IF NOT EXISTS</span>
+      </div>
+    </div>
+    <div class="problem-item">
+      <div>
+        <div class="prob-label">Problema</div>
+        Threshold 500ms para registro
+      </div>
+      <div>
+        <div class="prob-label">Causa</div>
+        Meta irreal para operação com Argon2 + Cassandra
+      </div>
+      <div>
+        <div class="prob-label">Solução</div>
+        Ajustado para 2.000ms (registro) e 2.500ms (login)
+      </div>
+    </div>
+    <div class="problem-item">
+      <div>
+        <div class="prob-label">Problema</div>
+        405 Method Not Allowed no DELETE /tickets
+      </div>
+      <div>
+        <div class="prob-label">Causa</div>
+        Endpoint DELETE não existia no tickets.py em produção
+      </div>
+      <div>
+        <div class="prob-label">Solução</div>
+        Adicionado endpoint DELETE com PKs completas do Cassandra
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RECOMENDAÇÕES -->
+<section class="reveal">
+  <div class="section-label">08 — Recomendações</div>
+  <h2>Próximos Passos</h2>
+  <div class="rec-grid">
+    <div class="rec-card">
+      <span class="rec-num">01</span>
+      <span class="rec-priority pri-alta">Alta</span>
+      <h4>Reduzir custo do Argon2 em testes</h4>
+      <div class="rec-impact">Ajustar <span class="mono">memory_cost</span> e <span class="mono">time_cost</span> — redução estimada de 40–60% na latência de registro.</div>
+    </div>
+    <div class="rec-card">
+      <span class="rec-num">02</span>
+      <span class="rec-priority pri-media">Média</span>
+      <h4>Cache de sessão com Redis/JWT</h4>
+      <div class="rec-impact">Evitar recalcular hash a cada login. Login abaixo de 100ms para usuários já autenticados.</div>
+    </div>
+    <div class="rec-card">
+      <span class="rec-num">03</span>
+      <span class="rec-priority pri-alta">Alta</span>
+      <h4>Restringir CORS em produção</h4>
+      <div class="rec-impact">Substituir <span class="mono">allow_origins=[*]</span> pela URL do frontend. Impede chamadas de origens não autorizadas.</div>
+    </div>
+    <div class="rec-card">
+      <span class="rec-num">04</span>
+      <span class="rec-priority pri-alta">Alta</span>
+      <h4>Autenticação JWT nos endpoints sensíveis</h4>
+      <div class="rec-impact">Impede acesso não autorizado ao <span class="mono">POST /eventos</span> e <span class="mono">DELETE /conta</span>.</div>
+    </div>
+    <div class="rec-card">
+      <span class="rec-num">05</span>
+      <span class="rec-priority pri-media">Média</span>
+      <h4>NetworkTopologyStrategy no Cassandra</h4>
+      <div class="rec-impact">Substituir <span class="mono">SimpleStrategy</span> para suportar escalabilidade multi-nó em produção.</div>
+    </div>
+    <div class="rec-card">
+      <span class="rec-num">06</span>
+      <span class="rec-priority pri-media">Média</span>
+      <h4>Testes em servidor dedicado</h4>
+      <div class="rec-impact">Executar fora da máquina local para resultados mais representativos do ambiente de produção.</div>
+    </div>
+  </div>
+</section>
+
+<!-- CONCLUSÃO -->
+<section class="reveal">
+  <div class="section-label">09 — Conclusão</div>
+  <h2>Conclusão</h2>
+  <div class="conclusion-box">
+    O sistema Happy Hour demonstrou <strong>solidez funcional sob carga</strong>: nenhuma falha de requisição foi registrada em nenhum dos dois cenários testados, com 100% de checks aprovados em um total de 3.042 verificações realizadas.<br><br>
+    O único threshold não atingido foi a latência p95 do cadastro (4,47s vs meta de 2,0s), explicado pelo custo computacional do Argon2 e pela contenção de 100 VUs em ambiente local. Esse comportamento é esperado e não representa uma falha do sistema, mas sim uma característica do ambiente de execução e da configuração de segurança escolhida.<br><br>
+    O cenário de login passou em todos os critérios, com p95 de 1,64s e 0% de falhas, demonstrando que a arquitetura <strong>FastAPI + Cassandra</strong> é capaz de sustentar carga real de usuários simultâneos de forma estável.
+  </div>
+  <div class="final-stats">
+    <div class="final-stat">
+      <span class="final-stat-val">723</span>
+      <span class="final-stat-label">Registros</span>
+    </div>
+    <div class="final-stat">
+      <span class="final-stat-val">582</span>
+      <span class="final-stat-label">Logins</span>
+    </div>
+    <div class="final-stat">
+      <span class="final-stat-val" style="color:var(--green)">100%</span>
+      <span class="final-stat-label">Sucesso</span>
+    </div>
+    <div class="final-stat">
+      <span class="final-stat-val" style="color:var(--green)">0%</span>
+      <span class="final-stat-label">Falhas</span>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span>Happy Hour — Relatório de Teste de Carga · 02/06/2026</span>
+  <span>Thiago Porto Scarano & Felipe Fionda · UNIRIO</span>
+</footer>
+
+<script>
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.08 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

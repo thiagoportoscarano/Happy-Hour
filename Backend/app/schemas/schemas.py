@@ -1,7 +1,7 @@
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, field_validator
 from typing import Optional
 from datetime import datetime
-import uuid
+
 
 class LoginRequest(BaseModel):
     email: str
@@ -11,7 +11,7 @@ class LoginRequest(BaseModel):
 class LoginResponse(BaseModel):
     sucesso: bool
     nome: str
-    tipo: str                    
+    tipo: str
     id_usuario: str
 
 
@@ -20,7 +20,7 @@ class RegistroClienteRequest(BaseModel):
     email: str
     cpf: str
     senha: str
-
+    tipo: str = "cliente"          
     @field_validator("cpf")
     @classmethod
     def cpf_apenas_digitos(cls, v: str) -> str:
@@ -28,13 +28,26 @@ class RegistroClienteRequest(BaseModel):
 
 
 class RegistroOrganizadorRequest(BaseModel):
-    nome: str                     
+    nome: str
     email: str
     cpf: str
     senha: str
     tipo: str = "organizador"
     nome_organizacao: Optional[str] = None
     tipo_organizacao: Optional[str] = None
+
+    @field_validator("cpf")
+    @classmethod
+    def cpf_apenas_digitos(cls, v: str) -> str:
+        return v.replace(".", "").replace("-", "").replace("/", "")
+
+
+class RegistroValidadorRequest(BaseModel):   
+    nome: str
+    email: str
+    cpf: str
+    senha: str
+    tipo: str = "validador"
 
     @field_validator("cpf")
     @classmethod
@@ -71,6 +84,20 @@ class EventoResponse(BaseModel):
     receita: float = 0.0
 
 
+class LoteCreate(BaseModel):              
+    nome: str
+    preco: float
+    quantidade: int
+
+
+class LoteResponse(BaseModel):            
+    id_lote: str
+    id_evento: str
+    nome: str
+    preco: float
+    quantidade: int
+
+
 class CompraRequest(BaseModel):
     id_evento: str
     id_cliente: str
@@ -78,11 +105,13 @@ class CompraRequest(BaseModel):
     data_evento: datetime
     local_evento: str
     valor_pago: float
-    forma_pagamento: str          
+    forma_pagamento: str
+    quantidade: int = 1            
 
 
 class TicketResponse(BaseModel):
     id_ticket: str
+    id_evento: str                 
     codigo_qr: str
     status: str
     data_compra: datetime

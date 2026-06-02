@@ -1,11 +1,3 @@
-"""
-app/db/cassandra.py
-───────────────────
-Gerencia a conexão com o Cassandra como singleton.
-A sessão é criada uma vez no startup do FastAPI e reutilizada
-em todos os endpoints (best practice do driver oficial).
-"""
-
 import os
 import logging
 from cassandra.cluster import Cluster, ExecutionProfile, EXEC_PROFILE_DEFAULT
@@ -17,36 +9,25 @@ from dotenv import load_dotenv
 load_dotenv()
 logger = logging.getLogger(__name__)
 
-# ── Configurações via .env ──────────────────────────────────────────────────
 CASSANDRA_HOSTS    = os.getenv("CASSANDRA_HOSTS", "127.0.0.1").split(",")
 CASSANDRA_PORT     = int(os.getenv("CASSANDRA_PORT", 9042))
 CASSANDRA_KEYSPACE = os.getenv("CASSANDRA_KEYSPACE", "happy_hour")
 CASSANDRA_USERNAME = os.getenv("CASSANDRA_USERNAME", "")
 CASSANDRA_PASSWORD = os.getenv("CASSANDRA_PASSWORD", "")
 
-# ── Singleton de sessão ─────────────────────────────────────────────────────
 _cluster = None
 _session = None
 
 
 def get_session():
-    """
-    Retorna a sessão Cassandra já conectada.
-    Levanta RuntimeError se connect() não foi chamado antes.
-    """
     if _session is None:
         raise RuntimeError("Cassandra não conectado. Chame connect() no startup.")
     return _session
 
 
 def connect():
-    """
-    Abre a conexão com o Cassandra e cria o keyspace + tabelas se não existirem.
-    Deve ser chamado UMA vez no lifespan do FastAPI.
-    """
     global _cluster, _session
 
-    # Perfil de execução padrão: QUORUM para leitura e escrita
     profile = ExecutionProfile(
         load_balancing_policy=DCAwareRoundRobinPolicy(),
         retry_policy=RetryPolicy(),
@@ -58,11 +39,10 @@ def connect():
         "contact_points": CASSANDRA_HOSTS,
         "port": CASSANDRA_PORT,
         "execution_profiles": {EXEC_PROFILE_DEFAULT: profile},
-        "protocol_version": 5,          # Cassandra 4+ / 5
+        "protocol_version": 5,          
         "connect_timeout": 10,
     }
 
-    # Autenticação (se configurada no .env)
     if CASSANDRA_USERNAME and CASSANDRA_PASSWORD:
         kwargs["auth_provider"] = PlainTextAuthProvider(
             username=CASSANDRA_USERNAME,
@@ -81,7 +61,6 @@ def connect():
 
 
 def disconnect():
-    """Fecha a conexão. Chamado no shutdown do FastAPI."""
     global _cluster, _session
     if _session:
         _session.shutdown()
@@ -91,11 +70,7 @@ def disconnect():
     _cluster = None
     logger.info("Cassandra desconectado.")
 
-
-# ── DDL ─────────────────────────────────────────────────────────────────────
-
 def _criar_keyspace():
-    """Cria o keyspace happy_hour se não existir."""
     _session.execute(f"""
         CREATE KEYSPACE IF NOT EXISTS {CASSANDRA_KEYSPACE}
         WITH replication = {{
@@ -104,24 +79,9 @@ def _criar_keyspace():
         }}
         AND durable_writes = true;
     """)
-    # Para produção com múltiplos nós, troque por:
-    # 'class': 'NetworkTopologyStrategy', 'datacenter1': 3
 
 
 def _criar_tabelas():
-    """
-    Cria todas as tabelas do Happy Hour conforme o Esquema Físico
-    do documento de especificação (seção 10.5 — Cassandra CQL DDL).
-
-    Tabelas criadas:
-      - usuarios_por_email      → autenticação / lookup de login
-      - eventos_por_organizador → listagem e gestão de eventos (UC02)
-      - tickets_por_cliente     → histórico de compras do cliente (UC01)
-      - tickets_por_evento      → check-in pelo validador (UC03)
-      - vagas_evento            → contador atômico de vagas (RN003)
-    """
-
-    # 1. Usuários — partition key = email (O(1) para login)
     _session.execute("""
         CREATE TABLE IF NOT EXISTS usuarios_por_email (
             email           TEXT,
@@ -136,13 +96,10 @@ def _criar_tabelas():
         );
     """)
 
-    # Índice secundário para garantir unicidade de CPF (UC04)
     _session.execute("""
         CREATE INDEX IF NOT EXISTS idx_usuarios_cpf
         ON usuarios_por_email (cpf);
     """)
-
-    # 2. Eventos por organizador — clustering por data (mais recente primeiro)
     _session.execute("""
         CREATE TABLE IF NOT EXISTS eventos_por_organizador (
             id_organizador      UUID,
@@ -157,8 +114,6 @@ def _criar_tabelas():
         ) WITH CLUSTERING ORDER BY (data_hora DESC, id_evento ASC);
     """)
 
-    # 3. Todos os eventos — para a listagem pública (UC05)
-    #    Partition key estática 'todos' agrupa tudo numa partição consultável
     _session.execute("""
         CREATE TABLE IF NOT EXISTS eventos_publicos (
             bucket          TEXT,
@@ -174,7 +129,6 @@ def _criar_tabelas():
         ) WITH CLUSTERING ORDER BY (data_hora DESC, id_evento ASC);
     """)
 
-    # 4. Tickets por cliente — histórico de compras
     _session.execute("""
         CREATE TABLE IF NOT EXISTS tickets_por_cliente (
             id_cliente          UUID,
@@ -192,13 +146,11 @@ def _criar_tabelas():
         ) WITH CLUSTERING ORDER BY (data_compra DESC, id_ticket ASC);
     """)
 
-    # Índice para lookup por QR Code no histórico
     _session.execute("""
         CREATE INDEX IF NOT EXISTS idx_tickets_cliente_qr
         ON tickets_por_cliente (codigo_qr);
     """)
 
-    # 5. Tickets por evento — check-in pelo validador (UC03)
     _session.execute("""
         CREATE TABLE IF NOT EXISTS tickets_por_evento (
             id_evento           UUID,
@@ -212,13 +164,23 @@ def _criar_tabelas():
         ) WITH CLUSTERING ORDER BY (codigo_qr ASC);
     """)
 
-    # 6. Vagas por evento — COUNTER atômico (RN003)
     _session.execute("""
         CREATE TABLE IF NOT EXISTS vagas_evento (
             id_evento           UUID PRIMARY KEY,
             vagas_disponiveis   COUNTER,
             total_vendidos      COUNTER
         );
+    """)
+
+    _session.execute("""
+        CREATE TABLE IF NOT EXISTS lotes_por_evento (
+            id_evento       UUID,
+            id_lote         UUID,
+            nome            TEXT,
+            preco           DECIMAL,
+            quantidade      INT,
+            PRIMARY KEY (id_evento, id_lote)
+        ) WITH CLUSTERING ORDER BY (id_lote ASC);
     """)
 
     logger.info("Tabelas Cassandra verificadas/criadas com sucesso.")

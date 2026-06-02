@@ -3,6 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script>
+const tipoUsuario = localStorage.getItem('usuarioTipo');
+
+if (tipoUsuario !== 'organizador') {
+    window.location.href = 'login-organizador.html';
+}
+</script>
+
 <title>Happy Hour — Painel do Organizador</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -415,7 +424,7 @@ function openCreateModal() {
   document.body.style.overflow = 'hidden';
 }
 
-function openEditModal(id) {
+async function openEditModal(id) {
   const ev = orgEvents.find(e => e.id_evento === id);
   if (!ev) return;
   
@@ -434,11 +443,21 @@ function openEditModal(id) {
   
   document.getElementById('lotesRows').innerHTML = '';
   loteCount = 0;
-  (ev.lotes || [{ nome: 'Pista Geral', preco: 100, qty: ev.capacidade_maxima || 100 }]).forEach(l => addLote(l.nome, l.preco, l.qty));
-  
   document.getElementById('formAlert').classList.remove('show');
   document.getElementById('eventModal').classList.add('open');
   document.body.style.overflow = 'hidden';
+
+  try {
+    const resLotes = await fetch(`${API_BASE}/eventos/${ev.id_evento}/lotes`);
+    const lotesDoEvento = resLotes.ok ? await resLotes.json() : [];
+    if (lotesDoEvento.length > 0) {
+      lotesDoEvento.forEach(l => addLote(l.nome, l.preco, l.quantidade));
+    } else {
+      addLote();
+    }
+  } catch {
+    addLote();
+  }
 }
 
 function openDeleteModal(id) {
@@ -491,6 +510,31 @@ async function carregarEventos() {
     const response = await fetch(`${API_BASE}/organizadores/${organizadorId}/eventos`);
     if (response.ok) {
       orgEvents = await response.json();
+      await Promise.all(orgEvents.map(async (ev) => {
+        try {
+          const vagasRes = await fetch(`${API_BASE}/vagas/${ev.id_evento}`);
+          if (vagasRes.ok) {
+            const vagas = await vagasRes.json();
+            ev.vendidos = parseInt(vagas.total_vendidos) || 0;
+          }
+          const lotesRes = await fetch(`${API_BASE}/eventos/${ev.id_evento}/lotes`);
+          if (lotesRes.ok) {
+            const lotes = await lotesRes.json();
+            if (lotes.length > 0) {
+              const totalQty = lotes.reduce((s, l) => s + (l.quantidade || 0), 0);
+              const precoMedio = totalQty > 0
+                ? lotes.reduce((s, l) => s + l.preco * l.quantidade, 0) / totalQty
+                : 0;
+              ev.receita = parseFloat((precoMedio * (ev.vendidos || 0)).toFixed(2));
+            } else {
+              ev.receita = 0;
+            }
+          }
+        } catch (_) {
+          ev.vendidos = ev.vendidos || 0;
+          ev.receita = ev.receita || 0;
+        }
+      }));
     } else {
       throw new Error('Erro ao carregar eventos');
     }
@@ -547,6 +591,19 @@ async function saveEvent() {
         const updatedEvent = await response.json();
         const idx = orgEvents.findIndex(e => e.id_evento === editingId);
         if (idx > -1) orgEvents[idx] = { ...orgEvents[idx], ...updatedEvent, ...payload };
+
+        const lotesAntigos = await fetch(`${API_BASE}/eventos/${editingId}/lotes`).then(r => r.ok ? r.json() : []).catch(() => []);
+        await Promise.all(lotesAntigos.map(l =>
+          fetch(`${API_BASE}/eventos/${editingId}/lotes/${l.id_lote}`, { method: 'DELETE' })
+        ));
+        await Promise.all(lotes.map(l =>
+          fetch(`${API_BASE}/eventos/${editingId}/lotes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome: l.nome, preco: l.preco, quantidade: l.qty })
+          })
+        ));
+
         showToast('Evento atualizado com sucesso!');
       } else {
         throw new Error('Erro na atualização');
@@ -561,6 +618,15 @@ async function saveEvent() {
       if (response.ok) {
         const newEvent = await response.json();
         orgEvents.unshift({ ...newEvent, vendidos: 0, receita: 0, status: status });
+
+        await Promise.all(lotes.map(l =>
+          fetch(`${API_BASE}/eventos/${newEvent.id_evento}/lotes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome: l.nome, preco: l.preco, quantidade: l.qty })
+          })
+        ));
+
         showToast('Evento criado com sucesso!');
       } else {
         throw new Error('Erro na criação');
@@ -603,28 +669,21 @@ async function saveEvent() {
 
 async function doDelete() {
   if (!deleteId) return;
-  
-  const evento = orgEvents.find(e => e.id_evento === deleteId);
-  if (!evento) return;
-  
+
   try {
-    const response = await fetch(`${API_BASE}/eventos/${deleteId}?id_organizador=${organizadorId}&data_hora=${encodeURIComponent(evento.data_hora)}`, {
+    const response = await fetch(`${API_BASE}/eventos/${deleteId}?id_organizador=${organizadorId}`, {
       method: 'DELETE'
     });
     
-    if (!response.ok && response.status !== 204) {
-      throw new Error('Erro na exclusão');
+    if (response.ok) {
+        showToast('Evento excluído com sucesso.');
+        await carregarEventos(); 
+    } else {
+        showToast('Erro ao excluir no banco.');
     }
   } catch (error) {
-    console.error('Erro ao excluir via API:', error);
+    console.error('Erro:', error);
   }
-  
-  orgEvents = orgEvents.filter(e => e.id_evento !== deleteId);
-  document.getElementById('deleteModal').classList.remove('open');
-  renderTable(orgEvents);
-  updateKPIs();
-  showToast('Evento excluído.');
-  deleteId = null;
 }
 
 function closeModal() {
