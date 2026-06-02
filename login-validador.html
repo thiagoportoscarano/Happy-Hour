@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Happy Hour — Área do Organizador</title>
+<title>Happy Hour — Área do Validador</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
@@ -162,27 +162,33 @@
   </div>
 
   <div class="left-content">
-    <div class="left-tag-org">Área do Organizador</div>
-    <h2>Crie eventos.<br><em>Venda mais.</em></h2>
-    <p>Acesse o painel de gestão, publique seus shows e acompanhe suas vendas em tempo real.</p>
+    <div class="left-tag-org">Área do Validador</div>
+    <h2>Valide ingressos.<br><em>Controle acessos.</em></h2>
 
+    <p>
+    Acesse o painel de validação e realize o check-in dos participantes utilizando QR Code.
+    </p>
+    
     <div class="org-stats">
-      <div class="org-stat-card">
-        <div class="stat-val">5</div>
-        <div class="stat-lbl">Eventos ativos</div>
-      </div>
-      <div class="org-stat-card highlight">
-        <div class="stat-val">140k</div>
-        <div class="stat-lbl">Ingressos vendidos</div>
-      </div>
-      <div class="org-stat-card">
-        <div class="stat-val">48h</div>
-        <div class="stat-lbl">Política de reembolso</div>
-      </div>
-      <div class="org-stat-card">
-        <div class="stat-val">QR</div>
-        <div class="stat-lbl">Check-in digital</div>
-      </div>
+        <div class="org-stat-card">
+            <div class="stat-val">QR</div>
+            <div class="stat-lbl">Leitura digital</div>
+        </div>
+
+        <div class="org-stat-card highlight">
+            <div class="stat-val">100%</div>
+            <div class="stat-lbl">Validação segura</div>
+        </div>
+
+        <div class="org-stat-card">
+            <div class="stat-val">24h</div>
+            <div class="stat-lbl">Disponibilidade</div>
+        </div>
+
+        <div class="org-stat-card">
+            <div class="stat-val">APP</div>
+            <div class="stat-lbl">Check-in rápido</div>
+        </div>
     </div>
   </div>
 
@@ -194,7 +200,7 @@
 
     <div class="tabs">
       <button class="tab-btn active" id="tabLogin" onclick="switchTab('login')">Entrar</button>
-      <button class="tab-btn" id="tabRegister" onclick="switchTab('register')">Cadastrar organização</button>
+      <button class="tab-btn" id="tabRegister" onclick="switchTab('register')">Criar conta de validador</button>
     </div>
 
     <div id="loginForm">
@@ -203,12 +209,12 @@
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
         </svg>
-        Acesso restrito a organizadores cadastrados.
+        Acesso restrito a validadores cadastrados.
       </div>
 
       <div class="form-header">
         <h1>Entrar</h1>
-        <p>Acesse o painel de gestão com e-mail e senha.</p>
+        <p>Acesse o painel de validação com e-mail e senha.</p>
       </div>
 
       <div class="alert danger" id="loginAlert">
@@ -217,7 +223,9 @@
       </div>
 
       <div class="field">
-        <label for="loginEmail">E-mail da organização</label>
+        <label for="loginEmail">
+            E-mail do validador
+        </label>
         <div class="input-wrap">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
@@ -259,14 +267,14 @@
       <div class="divider-or">ou entre com a conta de demonstração</div>
 
       <button class="btn-demo-org" onclick="loginAsOrg()">
-        Preencher com conta de teste (Organizador)
+        Preencher com conta de teste (Validador)
       </button>
     </div>
 
     <div id="registerForm" style="display:none;">
       <div class="form-header">
-        <h1>Criar organização</h1>
-        <p>Cadastre sua empresa ou produtora para publicar eventos.</p>
+        <h1>Criar conta</h1>
+        <p>Cadastre um novo validador para acessar o sistema de check-in.</p>
       </div>
 
       <div class="alert info" id="registerAlert" style="display:none;">
@@ -274,45 +282,8 @@
         <span id="registerAlertMsg"></span>
       </div>
 
-      <div style="margin-bottom:1.125rem; animation: fadeUp 0.5s ease both;">
-        <label style="display:block; font-size:0.8125rem; font-weight:600; color:var(--ink-2); margin-bottom:0.625rem;">
-          Tipo de organização
-        </label>
-        <div class="org-type-grid" id="orgTypeGrid">
-          <div class="org-type-option selected" data-type="produtora" onclick="selectOrgType(this)">
-            <span class="type-icon">🎪</span>
-            <span class="type-label">Produtora de eventos</span>
-          </div>
-          <div class="org-type-option" data-type="casa_de_show" onclick="selectOrgType(this)">
-            <span class="type-icon">🎸</span>
-            <span class="type-label">Casa de show</span>
-          </div>
-          <div class="org-type-option" data-type="artista" onclick="selectOrgType(this)">
-            <span class="type-icon">🎤</span>
-            <span class="type-label">Artista / Banda</span>
-          </div>
-          <div class="org-type-option" data-type="outro" onclick="selectOrgType(this)">
-            <span class="type-icon">🏢</span>
-            <span class="type-label">Outro</span>
-          </div>
-        </div>
-        <div class="field-error" id="orgTypeErr" style="margin-top:-0.5rem;">Selecione o tipo de organização.</div>
-      </div>
-
       <div class="field">
-        <label for="regNome">Nome da organização</label>
-        <div class="input-wrap">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-            <polyline points="9 22 9 12 15 12 15 22"/>
-          </svg>
-          <input type="text" id="regNome" placeholder="DJ Productions Ltda" autocomplete="organization">
-        </div>
-        <div class="field-error" id="regNomeErr">Informe o nome da organização.</div>
-      </div>
-
-      <div class="field">
-        <label for="regResponsavel">Nome do responsável</label>
+        <label for="regResponsavel">Nome</label>
         <div class="input-wrap">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -320,7 +291,7 @@
           </svg>
           <input type="text" id="regResponsavel" placeholder="Carlos Mendes" autocomplete="name">
         </div>
-        <div class="field-error" id="regResponsavelErr">Informe o nome do responsável.</div>
+        <div class="field-error" id="regResponsavelErr">Informe o nome completo.</div>
       </div>
 
       <div class="field">
@@ -338,7 +309,7 @@
 
       <div class="field">
         <div class="field-label-row">
-          <label for="regCpf">CPF do responsável</label>
+          <label for="regCpf">CPF</label>
         </div>
         <div class="input-wrap">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -397,13 +368,13 @@
       <div class="checkbox-row">
         <input type="checkbox" id="termsCheck">
         <label for="termsCheck">
-          Li e aceito os <a href="#">Termos para Organizadores</a> e a
+          Li e aceito os <a href="#">Termos para Validadores</a> e a
           <a href="#">Política de Privacidade</a>
         </label>
       </div>
 
       <button class="btn-submit" id="registerBtn" onclick="doRegister()">
-        <span class="btn-text">Criar conta de organizador →</span>
+        <span class="btn-text">Criar conta de validador →</span>
         <div class="spinner"></div>
       </button>
     </div>
@@ -411,10 +382,10 @@
     <div class="success-box-org" id="successBox">
       <div class="success-icon-org">🎉</div>
       <h2>Cadastro enviado!</h2>
-      <p>Recebemos sua solicitação de acesso como organizador.</p>
+      <p>Recebemos sua solicitação de acesso como validador.</p>
       <div class="success-detail">
         Um e-mail de confirmação foi enviado para <strong id="successEmail"></strong>.<br>
-        Após a verificação, sua conta com perfil <strong>organizador</strong> estará ativa e você poderá criar eventos, definir lotes de ingressos e consultar relatórios de vendas.
+        Após a verificação, sua conta com perfil <strong>validador</strong> estará ativa e você poderá validar eventos.
       </div>
       <button class="btn-submit" onclick="switchTab('login')" style="display:block;width:100%;max-width:none;">
         <span class="btn-text">Ir para o login →</span>
@@ -580,16 +551,10 @@ async function doLogin() {
     const data = await response.json();
 
     if (response.ok) {
-      if (data.tipo && data.tipo !== 'organizador') {
-        document.getElementById('loginAlertMsg').textContent =
-          'Esta conta não é de um organizador. Use o login de clientes.';
-        document.getElementById('loginAlert').classList.add('show');
-        return;
-      }
       localStorage.setItem('orgLogado', data.nome);
       localStorage.setItem('orgId', data.id_usuario);
-      localStorage.setItem('orgTipo', data.tipo || 'organizador');
-      window.location.href = 'painel_organizador.html';
+      localStorage.setItem('orgTipo', data.tipo || 'validador');
+      window.location.href = 'validar.html';
     } else {
       document.getElementById('loginAlertMsg').textContent = data.detail || 'Erro ao fazer login.';
       document.getElementById('loginAlert').classList.add('show');
@@ -601,11 +566,11 @@ async function doLogin() {
       document.getElementById('loginAlert').classList.remove('show');
       localStorage.setItem('orgLogado', org.nome);
       localStorage.setItem('orgId', '44455566-7770-0000-0000-000000000001');
-      localStorage.setItem('orgTipo', 'organizador');
-      window.location.href = 'painel_organizador.html';
+      localStorage.setItem('orgTipo', 'validador');
+      window.location.href = 'validar.html';
     } else {
       document.getElementById('loginAlertMsg').textContent =
-        'E-mail ou senha incorretos, ou esta conta não é de um organizador.';
+        'E-mail ou senha incorretos, ou esta conta não é de um validador.';
       document.getElementById('loginAlert').classList.add('show');
     }
 
@@ -642,7 +607,7 @@ async function doRegister() {
   if (pwd.length < 6 || !/[a-zA-Z]/.test(pwd) || !/\d/.test(pwd)) { showErr('regPwd',    'regPwdErr'); ok = false; }
   if (pwd !== pwd2)                                             { showErr('regPwdConfirm', 'regPwdConfirmErr'); ok = false; }
   if (!terms) {
-    document.getElementById('registerAlertMsg').textContent = 'Aceite os Termos para Organizadores para continuar.';
+    document.getElementById('registerAlertMsg').textContent = 'Aceite os Termos para Validadores para continuar.';
     document.getElementById('registerAlert').style.display  = 'flex';
     document.getElementById('registerAlert').classList.add('show');
     ok = false;
@@ -657,13 +622,11 @@ async function doRegister() {
     email: email,
     cpf:   cpf,
     senha: pwd,
-    tipo:  'organizador',
-    nome_organizacao: nome,
-    tipo_organizacao: orgType ? orgType.dataset.type : 'outro'
+    tipo:  'validador'
   };
 
   try {
-    const response = await fetch('http://127.0.0.1:8000/api/registro/organizador', {
+    const response = await fetch('http://127.0.0.1:8000/api/registro/validador', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -701,7 +664,7 @@ function doForgot() {
   btn.classList.add('loading');
   setTimeout(() => {
     btn.classList.remove('loading');
-    alert('📧 Se esse e-mail estiver cadastrado como organizador, você receberá o link em instantes.');
+    alert('📧 Se esse e-mail estiver cadastrado como validador, você receberá o link em instantes.');
     switchTab('login');
   }, 1200);
 }

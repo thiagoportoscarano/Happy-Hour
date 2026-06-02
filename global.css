@@ -1,9 +1,9 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --brand: #7991fc;
+  --brand: #2243ff;
   --brand-deep: #2a3c91;
-  --brand-mid: #5c77eb;
+  --brand-mid: #041a80;
   --brand-light: #eef1ff;
   
 

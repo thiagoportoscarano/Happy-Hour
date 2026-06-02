@@ -1,13 +1,3 @@
-"""
-main.py
-───────
-Ponto de entrada do backend Happy Hour
-Conecta ao Cassandra no startup e desconecta no shutdown via lifespan
-
-Como rodar:
-    uvicorn main:app --reload --port 8000
-"""
-
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -25,10 +15,10 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("🚀 Iniciando Happy Hour API…")
-    connect()          # abre conexão + cria keyspace + cria tabelas
-    yield              # app roda aqui
+    connect()          
+    yield             
     logger.info("🛑 Encerrando Happy Hour API…")
-    disconnect()       # fecha conexão
+    disconnect()
 
 app = FastAPI(
     title="Happy Hour API",

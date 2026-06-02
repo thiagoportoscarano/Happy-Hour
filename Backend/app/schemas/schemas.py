@@ -41,6 +41,17 @@ class RegistroOrganizadorRequest(BaseModel):
     def cpf_apenas_digitos(cls, v: str) -> str:
         return v.replace(".", "").replace("-", "").replace("/", "")
 
+class RegistroValidadorRequest(BaseModel):
+    nome: str
+    email: str
+    cpf: str
+    senha: str
+    tipo: str = "validador"
+
+    @field_validator("cpf")
+    @classmethod
+    def cpf_apenas_digitos(cls, v: str) -> str:
+        return v.replace(".", "").replace("-", "").replace("/", "")
 
 class RegistroResponse(BaseModel):
     sucesso: bool
@@ -83,6 +94,7 @@ class CompraRequest(BaseModel):
 
 class TicketResponse(BaseModel):
     id_ticket: str
+    id_evento: str        # necessário para cancelamento e deleção no frontend
     codigo_qr: str
     status: str
     data_compra: datetime
@@ -99,3 +111,17 @@ class CheckinResponse(BaseModel):
     autorizado: bool
     mensagem: str
     nome_cliente: Optional[str] = None
+
+
+class LoteCreate(BaseModel):
+    nome: str
+    preco: float
+    quantidade: int
+
+
+class LoteResponse(BaseModel):
+    id_lote: str
+    id_evento: str
+    nome: str
+    preco: float
+    quantidade: int

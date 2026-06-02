@@ -117,7 +117,15 @@ async function doLogin() {
     localStorage.setItem('usuarioLogado', data.nome);
     localStorage.setItem('usuarioId', data.id_usuario);
     localStorage.setItem('usuarioEmail', email);
-    window.location.href = 'index.html';
+    localStorage.setItem('usuarioTipo', data.tipo);
+
+    if (data.tipo === 'organizador') {
+      window.location.href = 'painel-organizador.html';
+    } else if (data.tipo === 'validador') {
+      window.location.href = 'validar.html';
+    } else {
+      window.location.href = 'index.html';
+    }
     } else {
       document.getElementById('loginAlertMsg').textContent = data.detail || 'Erro ao fazer login.';
       document.getElementById('loginAlert').classList.add('show');
@@ -128,6 +136,7 @@ async function doLogin() {
         localStorage.setItem('usuarioLogado', 'Ana Paula Lima');
         localStorage.setItem('usuarioId', '11122233-3440-0000-0000-000000000001');
         localStorage.setItem('usuarioEmail', email);
+        localStorage.setItem('usuarioTipo', 'cliente');
         window.location.href = 'index.html';
     } else {
       document.getElementById('loginAlertMsg').textContent = 'E-mail ou senha incorretos. Tente novamente.';
