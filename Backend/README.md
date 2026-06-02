@@ -1,7 +1,7 @@
 # Happy Hour — Backend (FastAPI + Cassandra)
 
 Backend da plataforma de ingressos Happy Hour, desenvolvido para a disciplina de
-Análise e Projeto de Sistemas — UNIRIO / Escola de Informática Aplicada.
+Projeto integrador II — UNIRIO / Escola de Informática Aplicada.
 
 ---
 
