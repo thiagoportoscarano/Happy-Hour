@@ -1,3 +1,13 @@
+"""
+app/routers/tickets.py
+──────────────────────
+Endpoints de tickets e check-in.
+
+Otimizações aplicadas:
+  - Leitura de vagas usa stmt_vagas com LOCAL_ONE (mais rápido)
+  - Endpoints convertidos para async def
+"""
+
 import uuid
 import logging
 from datetime import datetime, timezone
@@ -5,7 +15,7 @@ from typing import List
 from fastapi import APIRouter, HTTPException, Query
 from decimal import Decimal
 
-from app.db.cassandra import get_session
+from app.db.cassandra import get_session, get_stmt_vagas
 from app.schemas.schemas import (
     CompraRequest, TicketResponse,
     CheckinRequest, CheckinResponse,
@@ -14,17 +24,18 @@ from app.schemas.schemas import (
 router = APIRouter(prefix="/api", tags=["Tickets"])
 logger = logging.getLogger(__name__)
 
+
+# ── COMPRAR INGRESSO(S) ───────────────────────────────────────────────────────
+
 @router.post("/tickets", response_model=List[TicketResponse], status_code=201)
-def comprar_ingresso(req: CompraRequest):
+async def comprar_ingresso(req: CompraRequest):
     session     = get_session()
     id_ev_uuid  = uuid.UUID(req.id_evento)
     id_cli_uuid = uuid.UUID(req.id_cliente)
     quantidade  = max(1, req.quantidade)
 
-    vagas_row = session.execute(
-        "SELECT vagas_disponiveis FROM vagas_evento WHERE id_evento = %s",
-        (id_ev_uuid,)
-    ).one()
+    # Leitura com LOCAL_ONE — mais rápido, suficiente para checar vagas
+    vagas_row = session.execute(get_stmt_vagas(), (id_ev_uuid,)).one()
 
     vagas_atuais = int(vagas_row.vagas_disponiveis) if vagas_row else 0
     if vagas_atuais <= 0:
@@ -36,12 +47,12 @@ def comprar_ingresso(req: CompraRequest):
         )
 
     tickets_gerados = []
-    agora          = datetime.now(timezone.utc)
-    valor_unitario = Decimal(str(req.valor_pago))
+    agora           = datetime.now(timezone.utc)
+    valor_unitario  = Decimal(str(req.valor_pago))
 
     for i in range(quantidade):
-        id_ticket = uuid.uuid4()
-        codigo_qr = f"QR-{req.id_evento[:8].upper()}-{str(id_ticket)[:8].upper()}"
+        id_ticket   = uuid.uuid4()
+        codigo_qr   = f"QR-{req.id_evento[:8].upper()}-{str(id_ticket)[:8].upper()}"
         data_compra = agora.replace(microsecond=(agora.microsecond + i) % 1_000_000)
 
         session.execute(
@@ -78,6 +89,7 @@ def comprar_ingresso(req: CompraRequest):
             titulo_evento=req.titulo_evento,
             valor_pago=float(valor_unitario),
         ))
+
     session.execute(
         """
         UPDATE vagas_evento
@@ -90,9 +102,12 @@ def comprar_ingresso(req: CompraRequest):
 
     return tickets_gerados
 
+
+# ── HISTÓRICO DO CLIENTE ──────────────────────────────────────────────────────
+
 @router.get("/tickets/{id_cliente}", response_model=List[TicketResponse])
-def historico_cliente(id_cliente: str):
-    session = get_session()
+async def historico_cliente(id_cliente: str):
+    session     = get_session()
     id_cli_uuid = uuid.UUID(id_cliente)
 
     rows = session.execute(
@@ -112,8 +127,11 @@ def historico_cliente(id_cliente: str):
         for r in rows
     ]
 
+
+# ── APAGAR INGRESSO DO BANCO ──────────────────────────────────────────────────
+
 @router.delete("/tickets/{id_ticket}")
-def deletar_ingresso(
+async def deletar_ingresso(
     id_ticket: str,
     id_cliente: str = Query(...),
     id_evento: str  = Query(...),
@@ -130,13 +148,10 @@ def deletar_ingresso(
         "WHERE id_cliente = %s AND data_compra = %s AND id_ticket = %s",
         (id_cli_uuid, data_compra, id_tk_uuid),
     )
-
     session.execute(
-        "DELETE FROM tickets_por_evento "
-        "WHERE id_evento = %s AND codigo_qr = %s",
+        "DELETE FROM tickets_por_evento WHERE id_evento = %s AND codigo_qr = %s",
         (id_ev_uuid, codigo_qr),
     )
-
     session.execute(
         """
         UPDATE vagas_evento
@@ -150,75 +165,65 @@ def deletar_ingresso(
     logger.info(f"Ingresso deletado: {id_ticket} | evento={id_evento}")
     return {"sucesso": True, "mensagem": "Ingresso removido do banco de dados."}
 
+
+# ── CHECK-IN ──────────────────────────────────────────────────────────────────
+
 @router.post("/checkin", response_model=CheckinResponse)
-def validar_ticket(req: CheckinRequest):
-    session = get_session()
+async def validar_ticket(req: CheckinRequest):
+    session    = get_session()
     id_ev_uuid = uuid.UUID(req.id_evento)
 
     row = session.execute(
         "SELECT status_validacao, nome_cliente, id_ticket, id_cliente, data_compra "
-        "FROM tickets_por_evento "
-        "WHERE id_evento = %s AND codigo_qr = %s",
+        "FROM tickets_por_evento WHERE id_evento = %s AND codigo_qr = %s",
         (id_ev_uuid, req.codigo_qr)
     ).one()
 
     if not row:
         return CheckinResponse(autorizado=False, mensagem="QR Code invalido ou nao pertence a este evento.")
-
     if row.status_validacao == "utilizado":
         return CheckinResponse(autorizado=False, mensagem="TICKET JA UTILIZADO — acesso bloqueado.")
-
     if row.status_validacao == "cancelado":
         return CheckinResponse(autorizado=False, mensagem="Ticket cancelado — acesso negado.")
 
     agora = datetime.now(timezone.utc)
 
     session.execute(
-        """
-        UPDATE tickets_por_evento
-        SET status_validacao = 'utilizado', data_checkin = %s
-        WHERE id_evento = %s AND codigo_qr = %s
-        """,
+        "UPDATE tickets_por_evento SET status_validacao = 'utilizado', data_checkin = %s "
+        "WHERE id_evento = %s AND codigo_qr = %s",
         (agora, id_ev_uuid, req.codigo_qr),
     )
-
     session.execute(
-        """
-        UPDATE tickets_por_cliente
-        SET status = 'utilizado'
-        WHERE id_cliente = %s AND data_compra = %s AND id_ticket = %s
-        """,
+        "UPDATE tickets_por_cliente SET status = 'utilizado' "
+        "WHERE id_cliente = %s AND data_compra = %s AND id_ticket = %s",
         (row.id_cliente, row.data_compra, row.id_ticket),
     )
 
     logger.info(f"Check-in autorizado: {req.codigo_qr} | evento={req.id_evento}")
-    return CheckinResponse(
-        autorizado=True,
-        mensagem="ENTRADA AUTORIZADA ✅",
-        nome_cliente=row.nome_cliente,
-    )
+    return CheckinResponse(autorizado=True, mensagem="ENTRADA AUTORIZADA ✅", nome_cliente=row.nome_cliente)
+
+
+# ── VAGAS DISPONÍVEIS ─────────────────────────────────────────────────────────
 
 @router.get("/vagas/{id_evento}")
-def vagas_disponiveis(id_evento: str):
-    session = get_session()
+async def vagas_disponiveis(id_evento: str):
+    session    = get_session()
     id_ev_uuid = uuid.UUID(id_evento)
 
-    row = session.execute(
-        "SELECT vagas_disponiveis, total_vendidos FROM vagas_evento WHERE id_evento = %s",
-        (id_ev_uuid,)
-    ).one()
-
+    row = session.execute(get_stmt_vagas(), (id_ev_uuid,)).one()
     if not row:
         raise HTTPException(status_code=404, detail="Evento nao encontrado.")
 
     return {
         "id_evento": id_evento,
         "vagas_disponiveis": row.vagas_disponiveis,
-        "total_vendidos": row.total_vendidos,
     }
 
+
+# ── CANCELAR SEM APAGAR ───────────────────────────────────────────────────────
+
 @router.patch("/tickets/{id_ticket}/cancelar")
-def cancelar_ingresso(
+async def cancelar_ingresso(
     id_ticket: str,
     id_cliente: str = Query(...),
     id_evento: str  = Query(...),
@@ -235,13 +240,11 @@ def cancelar_ingresso(
         "WHERE id_cliente = %s AND data_compra = %s AND id_ticket = %s",
         (id_cli_uuid, data_compra, id_tk_uuid),
     )
-
     session.execute(
         "UPDATE tickets_por_evento SET status_validacao = 'cancelado' "
         "WHERE id_evento = %s AND codigo_qr = %s",
         (id_ev_uuid, codigo_qr),
     )
-
     session.execute(
         """
         UPDATE vagas_evento

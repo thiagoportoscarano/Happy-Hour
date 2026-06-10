@@ -1,24 +1,65 @@
+"""
+app/routers/auth.py
+───────────────────
+Endpoints de autenticação:
+  POST /api/login      → login de qualquer tipo de usuário
+  POST /api/registro   → cadastro de cliente (tipo='cliente')
+  POST /api/registro/organizador → cadastro de organizador
+
+Otimizações aplicadas:
+  - hash_senha e verificar_senha rodam em thread pool (run_in_executor)
+    para não bloquear o event loop do uvicorn sob carga
+  - Endpoints convertidos para async def
+  - Argon2 com parâmetros ajustados para menor custo computacional
+"""
+
 import uuid
+import asyncio
 import logging
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException
+from passlib.hash import argon2 as argon2_hash
 
 from app.db.cassandra import get_session
 from app.schemas.schemas import (
-    LoginRequest,
-    LoginResponse,
-    RegistroClienteRequest,
-    RegistroOrganizadorRequest,
-    RegistroValidadorRequest,
-    RegistroResponse,
+    LoginRequest, LoginResponse,
+    RegistroClienteRequest, RegistroOrganizadorRequest, RegistroResponse,
 )
-from app.utils.security import hash_senha, verificar_senha
 
 router = APIRouter(prefix="/api", tags=["Auth"])
 logger = logging.getLogger(__name__)
 
+# Argon2 com parâmetros reduzidos para melhor throughput
+# memory_cost: 32MB (padrão 65MB), time_cost: 2 (padrão 3)
+_argon2 = argon2_hash.using(
+    memory_cost=32768,
+    time_cost=2,
+    parallelism=2,
+)
+
+
+# ── Helpers assíncronos de hash ───────────────────────────────────────────────
+
+async def _hash_senha(senha: str) -> str:
+    """Roda o Argon2 em thread pool para não bloquear o event loop."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, _argon2.hash, senha)
+
+
+async def _verificar_senha(senha: str, hash_armazenado: str) -> bool:
+    """Verifica o hash em thread pool."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, _argon2.verify, senha, hash_armazenado)
+
+
+# ── LOGIN ─────────────────────────────────────────────────────────────────────
+
 @router.post("/login", response_model=LoginResponse)
-def fazer_login(req: LoginRequest):
+async def fazer_login(req: LoginRequest):
+    """
+    Autentica qualquer usuário pelo e-mail.
+    O frontend de organizadores deve verificar se tipo == 'organizador'.
+    """
     session = get_session()
 
     row = session.execute(
@@ -30,7 +71,8 @@ def fazer_login(req: LoginRequest):
     if not row:
         raise HTTPException(status_code=401, detail="E-mail ou senha incorretos.")
 
-    if not verificar_senha(req.senha, row.senha_hash):
+    senha_ok = await _verificar_senha(req.senha, row.senha_hash)
+    if not senha_ok:
         raise HTTPException(status_code=401, detail="E-mail ou senha incorretos.")
 
     if row.status_conta != "confirmada":
@@ -43,102 +85,82 @@ def fazer_login(req: LoginRequest):
         id_usuario=str(row.id_usuario),
     )
 
-@router.post("/registro", response_model=RegistroResponse, status_code=201)
-def criar_conta_cliente(req: RegistroClienteRequest):
-    session = get_session()
-    _verificar_email_e_cpf_unicos(session, req.email, req.cpf, req.tipo)
 
-    novo_id = uuid.uuid4()
-    # IF NOT EXISTS garante atomicidade no Cassandra — elimina a necessidade
-    # do SELECT de e-mail anterior (o banco rejeita duplicatas num único round-trip).
-    result = session.execute(
+# ── REGISTRO CLIENTE ──────────────────────────────────────────────────────────
+
+@router.post("/registro", response_model=RegistroResponse, status_code=201)
+async def criar_conta_cliente(req: RegistroClienteRequest):
+    """
+    Cadastra um novo cliente.
+    Hash do Argon2 é executado em thread pool para liberar o event loop.
+    """
+    session = get_session()
+    _verificar_email_e_cpf_unicos(session, req.email, req.cpf, "cliente")
+
+    novo_id   = uuid.uuid4()
+    senha_hash = await _hash_senha(req.senha)
+
+    session.execute(
         """
         INSERT INTO usuarios_por_email
           (email, id_usuario, nome, cpf, senha_hash, tipo, data_cadastro, status_conta)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        IF NOT EXISTS
         """,
         (
             req.email.lower().strip(),
             novo_id,
             req.nome,
             req.cpf,
-            hash_senha(req.senha),
+            senha_hash,
             "cliente",
             datetime.now(timezone.utc),
             "confirmada",
         ),
     )
-    if not result.one().applied:
-        raise HTTPException(status_code=400, detail="Este e-mail já está cadastrado.")
 
     logger.info(f"Novo cliente cadastrado: {req.email}")
     return RegistroResponse(sucesso=True, mensagem="Conta criada com sucesso!")
 
+
+# ── REGISTRO ORGANIZADOR ──────────────────────────────────────────────────────
+
 @router.post("/registro/organizador", response_model=RegistroResponse, status_code=201)
-def criar_conta_organizador(req: RegistroOrganizadorRequest):
+async def criar_conta_organizador(req: RegistroOrganizadorRequest):
+    """
+    Cadastra um novo organizador.
+    """
     session = get_session()
     _verificar_email_e_cpf_unicos(session, req.email, req.cpf, req.tipo)
 
-    novo_id = uuid.uuid4()
-    result = session.execute(
+    novo_id    = uuid.uuid4()
+    senha_hash = await _hash_senha(req.senha)
+
+    session.execute(
         """
         INSERT INTO usuarios_por_email
           (email, id_usuario, nome, cpf, senha_hash, tipo, data_cadastro, status_conta)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        IF NOT EXISTS
         """,
         (
             req.email.lower().strip(),
             novo_id,
             req.nome,
             req.cpf,
-            hash_senha(req.senha),
+            senha_hash,
             "organizador",
             datetime.now(timezone.utc),
             "confirmada",
         ),
     )
-    if not result.one().applied:
-        raise HTTPException(status_code=400, detail="Este e-mail já está cadastrado.")
 
     logger.info(f"Novo organizador cadastrado: {req.email} | org: {req.nome_organizacao}")
     return RegistroResponse(sucesso=True, mensagem="Conta de organizador criada com sucesso!")
 
-@router.post("/registro/validador", response_model=RegistroResponse, status_code=201)
-def criar_conta_validador(req: RegistroValidadorRequest):
-    session = get_session()
-    _verificar_email_e_cpf_unicos(session, req.email, req.cpf, req.tipo)
 
-    novo_id = uuid.uuid4()
-    result = session.execute(
-        """
-        INSERT INTO usuarios_por_email
-          (email, id_usuario, nome, cpf, senha_hash, tipo, data_cadastro, status_conta)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        IF NOT EXISTS
-        """,
-        (
-            req.email.lower().strip(),
-            novo_id,
-            req.nome,
-            req.cpf,
-            hash_senha(req.senha),
-            "validador",
-            datetime.now(timezone.utc),
-            "confirmada",
-        ),
-    )
-    if not result.one().applied:
-        raise HTTPException(status_code=400, detail="Este e-mail já está cadastrado.")
-
-    return RegistroResponse(
-        sucesso=True,
-        mensagem="Conta de validador criada com sucesso!"
-    )
+# ── DELETAR CONTA ─────────────────────────────────────────────────────────────
 
 @router.delete("/conta/{email}")
-def deletar_conta(email: str):
+async def deletar_conta(email: str):
     session = get_session()
 
     row = session.execute(
@@ -160,13 +182,16 @@ def deletar_conta(email: str):
     logger.info(f"Conta deletada: {email} (tipo={row.tipo})")
     return {"sucesso": True, "mensagem": "Conta removida com sucesso."}
 
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
 def _deletar_eventos_do_organizador(session, id_organizador):
     BUCKET = "todos"
-    rows = session.execute(
+    rows   = session.execute(
         "SELECT data_hora, id_evento FROM eventos_por_organizador WHERE id_organizador = %s",
         (id_organizador,)
     )
-    eventos = list(rows)  
+    eventos = list(rows)
 
     for ev in eventos:
         session.execute(
@@ -184,6 +209,12 @@ def _deletar_eventos_do_organizador(session, id_organizador):
 
 
 def _verificar_email_e_cpf_unicos(session, email: str, cpf: str, tipo: str):
+    existente = session.execute(
+        "SELECT email FROM usuarios_por_email WHERE email = %s",
+        (email.lower().strip(),)
+    ).one()
+    if existente:
+        raise HTTPException(status_code=400, detail="Este e-mail já está cadastrado.")
 
     cpf_existente = session.execute(
         "SELECT email FROM usuarios_por_email WHERE cpf = %s",

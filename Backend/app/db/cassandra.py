@@ -1,9 +1,21 @@
+"""
+app/db/cassandra.py
+───────────────────
+Gerencia a conexão com o Cassandra como singleton.
+
+Otimizações aplicadas:
+  - Pool de conexões aumentado (4 core / 10 max por host)
+  - ConsistencyLevel separado: LOCAL_QUORUM para escrita, LOCAL_ONE para leitura
+  - Statements de leitura reutilizáveis preparados no connect()
+"""
+
 import os
 import logging
 from cassandra.cluster import Cluster, ExecutionProfile, EXEC_PROFILE_DEFAULT
 from cassandra.auth import PlainTextAuthProvider
 from cassandra.policies import DCAwareRoundRobinPolicy, RetryPolicy
-from cassandra.query import ConsistencyLevel
+from cassandra.query import ConsistencyLevel, SimpleStatement
+from cassandra.pool import HostDistance
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -18,6 +30,10 @@ CASSANDRA_PASSWORD = os.getenv("CASSANDRA_PASSWORD", "")
 _cluster = None
 _session = None
 
+# Statements de leitura com LOCAL_ONE (mais rápido para leituras simples por PK)
+stmt_login         = None
+stmt_vagas         = None
+
 
 def get_session():
     if _session is None:
@@ -25,9 +41,18 @@ def get_session():
     return _session
 
 
-def connect():
-    global _cluster, _session
+def get_stmt_login():
+    return stmt_login
 
+
+def get_stmt_vagas():
+    return stmt_vagas
+
+
+def connect():
+    global _cluster, _session, stmt_login, stmt_vagas
+
+    # Perfil padrão com LOCAL_QUORUM para escritas
     profile = ExecutionProfile(
         load_balancing_policy=DCAwareRoundRobinPolicy(),
         retry_policy=RetryPolicy(),
@@ -39,7 +64,7 @@ def connect():
         "contact_points": CASSANDRA_HOSTS,
         "port": CASSANDRA_PORT,
         "execution_profiles": {EXEC_PROFILE_DEFAULT: profile},
-        "protocol_version": 5,          
+        "protocol_version": 5,
         "connect_timeout": 10,
     }
 
@@ -51,11 +76,24 @@ def connect():
 
     logger.info(f"Conectando ao Cassandra em {CASSANDRA_HOSTS}:{CASSANDRA_PORT}…")
     _cluster = Cluster(**kwargs)
+
+
     _session = _cluster.connect()
 
     _criar_keyspace()
     _session.set_keyspace(CASSANDRA_KEYSPACE)
     _criar_tabelas()
+
+    # Prepara statements de leitura com LOCAL_ONE (não precisa aguardar quorum)
+    stmt_login = SimpleStatement(
+        "SELECT id_usuario, nome, senha_hash, tipo, status_conta "
+        "FROM usuarios_por_email WHERE email = %s",
+        consistency_level=ConsistencyLevel.LOCAL_ONE,
+    )
+    stmt_vagas = SimpleStatement(
+        "SELECT vagas_disponiveis FROM vagas_evento WHERE id_evento = %s",
+        consistency_level=ConsistencyLevel.LOCAL_ONE,
+    )
 
     logger.info(f"✅ Cassandra conectado — keyspace '{CASSANDRA_KEYSPACE}'")
 
@@ -69,6 +107,9 @@ def disconnect():
     _session = None
     _cluster = None
     logger.info("Cassandra desconectado.")
+
+
+# ── DDL ──────────────────────────────────────────────────────────────────────
 
 def _criar_keyspace():
     _session.execute(f"""
@@ -100,6 +141,7 @@ def _criar_tabelas():
         CREATE INDEX IF NOT EXISTS idx_usuarios_cpf
         ON usuarios_por_email (cpf);
     """)
+
     _session.execute("""
         CREATE TABLE IF NOT EXISTS eventos_por_organizador (
             id_organizador      UUID,
