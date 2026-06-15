@@ -128,9 +128,41 @@ async def criar_conta_cliente(req: RegistroClienteRequest):
 async def criar_conta_organizador(req: RegistroOrganizadorRequest):
     """
     Cadastra um novo organizador.
+    Se o e-mail já existir como 'cliente', promove a conta para 'organizador'
+    (permitindo que a mesma pessoa compre e organize eventos).
     """
     session = get_session()
-    _verificar_email_e_cpf_unicos(session, req.email, req.cpf, req.tipo)
+    email = req.email.lower().strip()
+
+    existente = session.execute(
+        "SELECT email, id_usuario, tipo FROM usuarios_por_email WHERE email = %s",
+        (email,)
+    ).one()
+
+    if existente:
+        if existente.tipo == "organizador":
+            raise HTTPException(status_code=400, detail="Este e-mail já está cadastrado como organizador.")
+
+        # Conta de cliente existente: promove para organizador
+        nova_senha_hash = await _hash_senha(req.senha)
+        session.execute(
+            """
+            UPDATE usuarios_por_email
+            SET tipo = 'organizador', senha_hash = %s
+            WHERE email = %s
+            """,
+            (nova_senha_hash, email),
+        )
+        logger.info(f"Cliente promovido a organizador: {email} | org: {req.nome_organizacao}")
+        return RegistroResponse(sucesso=True, mensagem="Sua conta foi atualizada para organizador com sucesso!")
+
+    # Verifica CPF duplicado apenas para cadastros novos
+    cpf_existente = session.execute(
+        "SELECT email FROM usuarios_por_email WHERE cpf = %s",
+        (req.cpf,)
+    ).one()
+    if cpf_existente:
+        raise HTTPException(status_code=400, detail="Este CPF já está cadastrado.")
 
     novo_id    = uuid.uuid4()
     senha_hash = await _hash_senha(req.senha)
@@ -142,7 +174,7 @@ async def criar_conta_organizador(req: RegistroOrganizadorRequest):
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """,
         (
-            req.email.lower().strip(),
+            email,
             novo_id,
             req.nome,
             req.cpf,
@@ -153,7 +185,7 @@ async def criar_conta_organizador(req: RegistroOrganizadorRequest):
         ),
     )
 
-    logger.info(f"Novo organizador cadastrado: {req.email} | org: {req.nome_organizacao}")
+    logger.info(f"Novo organizador cadastrado: {email} | org: {req.nome_organizacao}")
     return RegistroResponse(sucesso=True, mensagem="Conta de organizador criada com sucesso!")
 
 

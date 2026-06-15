@@ -119,13 +119,9 @@ async function doLogin() {
     localStorage.setItem('usuarioEmail', email);
     localStorage.setItem('usuarioTipo', data.tipo);
 
-    if (data.tipo === 'organizador') {
-      window.location.href = 'painel-organizador.html';
-    } else if (data.tipo === 'validador') {
-      window.location.href = 'validar.html';
-    } else {
-      window.location.href = 'index.html';
-    }
+    // login.html é sempre para clientes → redireciona para index.html
+    // Para acessar o painel de organizador, use login-organizador.html
+    window.location.href = 'index.html';
     } else {
       document.getElementById('loginAlertMsg').textContent = data.detail || 'Erro ao fazer login.';
       document.getElementById('loginAlert').classList.add('show');

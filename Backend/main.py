@@ -14,10 +14,10 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("🚀 Iniciando Happy Hour API…")
+    logger.info(" Iniciando Happy Hour API…")
     connect()          
     yield             
-    logger.info("🛑 Encerrando Happy Hour API…")
+    logger.info(" Encerrando Happy Hour API…")
     disconnect()
 
 app = FastAPI(

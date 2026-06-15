@@ -580,19 +580,21 @@ async function doLogin() {
     const data = await response.json();
 
     if (response.ok) {
-      if (data.tipo && data.tipo !== 'organizador') {
+      if (data.tipo !== 'organizador') {
         document.getElementById('loginAlertMsg').textContent =
-          'Esta conta não é de um organizador. Use o login de clientes.';
+          'Esta conta é de um cliente comum. Se você também quer criar eventos, cadastre-se como organizador na aba "Cadastrar organização".';
         document.getElementById('loginAlert').classList.add('show');
+        btn.classList.remove('loading');
         return;
       }
       localStorage.setItem('orgLogado', data.nome);
       localStorage.setItem('orgId', data.id_usuario);
-      localStorage.setItem('orgTipo', data.tipo || 'organizador');
+      localStorage.setItem('orgTipo', 'organizador');
       window.location.href = 'painel_organizador.html';
     } else {
       document.getElementById('loginAlertMsg').textContent = data.detail || 'Erro ao fazer login.';
       document.getElementById('loginAlert').classList.add('show');
+      btn.classList.remove('loading');
     }
 
   } catch (_) {
@@ -607,10 +609,8 @@ async function doLogin() {
       document.getElementById('loginAlertMsg').textContent =
         'E-mail ou senha incorretos, ou esta conta não é de um organizador.';
       document.getElementById('loginAlert').classList.add('show');
+      btn.classList.remove('loading');
     }
-
-  } finally {
-    btn.classList.remove('loading');
   }
 }
 
